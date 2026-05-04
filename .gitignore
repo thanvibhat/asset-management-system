@@ -1,0 +1,36 @@
+# Dependency directories
+node_modules/
+target/
+dist/
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.local
+
+# Docker
+.docker/
+
+# Build artifacts
+*.jar
+*.war
+
+backend_log.txt
+backend/uploads/
+
+.angular/
+node_modules/
+dist/
+
+# Local tools
+tools/
+
