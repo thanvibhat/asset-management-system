@@ -1,0 +1,147 @@
+<div class="page">
+  <div class="page-header">
+    <div class="page-title-group">
+      <h2 class="page-title">Vendors</h2>
+      <span class="page-subtitle">Manage supplier and vendor relationships</span>
+    </div>
+    <button class="btn btn-primary" (click)="openCreate()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      Add Vendor
+    </button>
+  </div>
+
+  <div class="card">
+    <div class="table-container">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Contact Person</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Type</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="loading">
+            <td colspan="7" class="text-center py-4">
+              <div class="spinner"></div>
+            </td>
+          </tr>
+          <tr *ngIf="!loading && vendors.length === 0">
+            <td colspan="7" class="text-center py-4 text-3">No vendors found.</td>
+          </tr>
+          <tr *ngFor="let v of vendors">
+            <td>#{{ v.id }}</td>
+            <td><strong>{{ v.name }}</strong></td>
+            <td>{{ v.contactPerson || '-' }}</td>
+            <td>{{ v.contactEmail }}</td>
+            <td>{{ v.contactPhone }}</td>
+            <td>
+              <span class="badge" [ngClass]="'badge-' + v.vendorType?.toLowerCase()">
+                {{ v.vendorType }}
+              </span>
+            </td>
+            <td>
+              <div class="actions">
+                <button class="btn-icon" (click)="openEdit(v)" title="Edit Vendor">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
+                </button>
+                <div class="delete-action" style="display: inline-block;">
+                  <button *ngIf="deleteConfirmId !== v.id" class="btn-icon text-danger" (click)="confirmDelete(v.id!)" title="Delete Vendor">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
+                    </svg>
+                  </button>
+                  <div *ngIf="deleteConfirmId === v.id" class="delete-confirm">
+                    <button class="btn btn-danger btn-sm" (click)="deleteVendor()">Confirm</button>
+                    <button class="btn btn-secondary btn-sm" (click)="cancelDelete()">Cancel</button>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination" *ngIf="totalPages > 1">
+      <button class="btn btn-secondary btn-sm" [disabled]="currentPage === 0" (click)="goToPage(currentPage - 1)">Previous</button>
+      <div class="pages">
+        <button *ngFor="let p of pages()" class="btn btn-sm" [class.btn-primary]="p === currentPage" [class.btn-secondary]="p !== currentPage" (click)="goToPage(p)">
+          {{ p + 1 }}
+        </button>
+      </div>
+      <button class="btn btn-secondary btn-sm" [disabled]="currentPage === totalPages - 1" (click)="goToPage(currentPage + 1)">Next</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">{{ editMode ? 'Edit Vendor' : 'Add New Vendor' }}</h2>
+      <button class="btn-icon" (click)="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form (ngSubmit)="save()" #vendorForm="ngForm">
+        <div class="form-group">
+          <label class="form-label">Vendor Name*</label>
+          <input type="text" class="form-control" name="name" [(ngModel)]="form.name" required placeholder="Enter vendor name">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col">
+            <label class="form-label">Contact Person</label>
+            <input type="text" class="form-control" name="contactPerson" [(ngModel)]="form.contactPerson" placeholder="Enter contact person name">
+          </div>
+          <div class="form-group col">
+            <label class="form-label">GST Number</label>
+            <input type="text" class="form-control" name="gstNumber" [(ngModel)]="form.gstNumber" placeholder="Enter GSTIN">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" name="contactEmail" [(ngModel)]="form.contactEmail" placeholder="Enter email">
+          </div>
+          <div class="form-group col">
+            <label class="form-label">Phone</label>
+            <input type="text" class="form-control" name="contactPhone" [(ngModel)]="form.contactPhone" placeholder="Enter phone number">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Address</label>
+          <textarea class="form-control" name="address" [(ngModel)]="form.address" rows="3" placeholder="Enter vendor address"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Vendor Type*</label>
+          <select class="form-control" name="vendorType" [(ngModel)]="form.vendorType" required>
+            <option *ngFor="let t of vendorTypes" [value]="t">{{ t }}</option>
+          </select>
+        </div>
+
+        <div class="error-msg" *ngIf="error">{{ error }}</div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeModal()" [disabled]="saving">Cancel</button>
+          <button type="submit" class="btn btn-primary" [disabled]="!vendorForm.form.valid || saving">
+            <span class="spinner-sm" *ngIf="saving"></span>
+            {{ editMode ? 'Update Vendor' : 'Create Vendor' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

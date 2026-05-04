@@ -1,0 +1,101 @@
+.app-layout { display: flex; height: 100vh; overflow: hidden; }
+
+.sidebar {
+  width: 220px; min-width: 220px;
+  background: var(--bg-2); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; padding: 16px 12px;
+  overflow-y: auto;
+  box-shadow: var(--shadow-sm);
+  z-index: 10;
+}
+
+.sidebar-brand {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 10px; margin-bottom: 20px;
+}
+.brand-icon {
+  width: 36px; height: 36px; border-radius: 8px;
+  background: var(--primary-light); color: var(--primary);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.brand-text { font-family: var(--font-main); font-size: 18px; font-weight: 700; color: var(--text); letter-spacing: -0.02em;}
+
+.nav-section { flex: 1; }
+.nav-section-label {
+  font-size: 11px; font-weight: 600; color: var(--text-3);
+  text-transform: uppercase; letter-spacing: 0.05em;
+  padding: 0 12px; margin-bottom: 12px;
+}
+
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: var(--radius);
+  color: var(--text-2); font-size: 13px; font-weight: 500;
+  transition: var(--transition); margin-bottom: 2px;
+  text-decoration: none;
+}
+.nav-item:hover { background: var(--bg-3); color: var(--text); }
+.nav-item.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
+.nav-item.active svg { color: var(--primary); }
+
+.sidebar-footer { border-top: 1px solid var(--border); padding-top: 12px; margin-top: 12px; }
+.user-info { display: flex; align-items: center; gap: 10px; padding: 6px 10px; margin-bottom: 8px; }
+.user-avatar {
+  width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+  background: var(--primary); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 600; font-size: 14px;
+}
+.user-details { min-width: 0; }
+.user-name { font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.footer-actions {
+  display: flex; gap: 8px;
+}
+
+.btn-icon {
+  display: flex; align-items: center; justify-content: center;
+  flex: 1; padding: 8px; border-radius: var(--radius);
+  background: var(--bg-3); border: 1px solid transparent; color: var(--text-2);
+  cursor: pointer; transition: var(--transition);
+}
+.btn-icon.notif-btn { position: relative; }
+.notif-badge {
+  position: absolute; top: 4px; right: 4px;
+  background: var(--danger); color: #fff;
+  font-size: 10px; font-weight: 700;
+  width: 16px; height: 16px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid var(--bg-2);
+}
+
+.notifications-panel {
+  position: absolute; bottom: 80px; left: 16px; right: 16px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow-lg);
+  z-index: 100; max-height: 400px; display: flex; flex-direction: column;
+}
+.panel-header {
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+  font-weight: 600; font-size: 13px; background: var(--bg-2);
+}
+.panel-body { overflow-y: auto; }
+.notif-item {
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+  cursor: pointer; transition: var(--transition);
+}
+.notif-item:hover { background: var(--bg-3); }
+.notif-item.unread { background: var(--primary-light-2); border-left: 3px solid var(--primary); }
+.notif-msg { font-size: 13px; margin-bottom: 4px; color: var(--text); }
+.notif-time { font-size: 11px; color: var(--text-3); }
+.empty-notif { padding: 20px; text-align: center; color: var(--text-3); font-size: 13px; }
+
+.btn-icon:hover { background: var(--bg-2); border-color: var(--border-2); color: var(--text); }
+.btn-icon.text-danger:hover { color: var(--danger); border-color: rgba(220, 38, 38, 0.3); background: var(--bg-danger); }
+
+.main-content { flex: 1; overflow-y: auto; background: var(--bg); }
+
+@media (max-width: 768px) {
+  .sidebar { width: 180px; min-width: 180px; }
+}

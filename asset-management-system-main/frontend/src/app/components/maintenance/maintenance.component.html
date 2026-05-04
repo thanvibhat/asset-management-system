@@ -1,0 +1,208 @@
+<div class="page">
+  <div class="page-header">
+    <div class="page-title-group">
+      <h2 class="page-title">Maintenance</h2>
+      <span class="page-subtitle">{{ totalElements }} total records</span>
+    </div>
+    <div class="row-actions" style="display: flex; gap: 10px;">
+      <button *ngIf="auth.canWrite()" class="btn btn-primary" (click)="openCreate()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Schedule Maintenance
+      </button>
+    </div>
+  </div>
+
+  <!-- Unified Filter Bar -->
+  <div class="filters card">
+    <div class="filter-row">
+      <div class="form-group filter-search">
+        <input class="form-control" type="text" placeholder="Search by name, tag, or serial..." 
+               [(ngModel)]="filters.search" (ngModelChange)="applyFilters()">
+      </div>
+      <div class="form-group">
+        <select class="form-control" [(ngModel)]="filters.status" (change)="applyFilters()">
+          <option value="">All Statuses</option>
+          <option value="SCHEDULED">Scheduled</option>
+          <option value="IN_PROGRESS">In Progress</option>
+          <option value="COMPLETED">Completed</option>
+          <option value="CANCELLED">Cancelled</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <select class="form-control" [(ngModel)]="filters.categoryId" (change)="applyFilters()">
+          <option value="">All Categories</option>
+          <option *ngFor="let c of categories" [value]="c.id">{{ c.name }}</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <select class="form-control" [(ngModel)]="filters.vendorId" (change)="applyFilters()">
+          <option value="">All Vendors</option>
+          <option *ngFor="let v of vendors" [value]="v.id">{{ v.name }}</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" (click)="applyFilters()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Search
+      </button>
+      <button class="btn btn-secondary" (click)="resetFilters()">Reset</button>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="spinner"></div>
+
+  <!-- Unified Activity Table -->
+  <div class="table-wrap" *ngIf="!loading">
+    <table>
+      <thead>
+        <tr>
+          <th>Asset</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Details</th>
+          <th>Timeline</th>
+          <th>Cost</th>
+          <th>Status</th>
+          <th *ngIf="auth.canWrite()">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of records">
+          <td>
+            <div class="asset-info">
+              <span class="asset-tag">{{ r.assetTag }}</span>
+              <div class="asset-name" style="margin-top:2px">{{ r.assetName }}</div>
+            </div>
+          </td>
+          <td><span [class]="typeBadge(r.maintenanceType)">{{ r.maintenanceType }}</span></td>
+          <td class="desc-cell" [title]="r.description">{{ r.description }}</td>
+          <td>
+            <div style="font-size:12px; color:var(--text-2)">{{ r.performedBy || '—' }}</div>
+          </td>
+          <td>
+            <div style="font-size:12px">
+              <span style="color:var(--text-3)">S:</span> {{ r.scheduledDate || '—' }}
+            </div>
+            <div style="font-size:12px" *ngIf="r.completedDate">
+              <span style="color:var(--text-3)">C:</span> {{ r.completedDate }}
+            </div>
+          </td>
+          <td style="font-weight: 500">{{ r.cost ? ('₹' + r.cost.toLocaleString('en-IN')) : '—' }}</td>
+          <td><span [class]="badgeClass(r.status)">{{ formatStatus(r.status) }}</span></td>
+          <td *ngIf="auth.canWrite()">
+            <div class="btn-group">
+              <button class="btn btn-outline btn-sm" style="margin-right: 4px;" (click)="openEdit(r)" title="Edit">Edit</button>
+              
+              <ng-container *ngIf="r.status !== 'COMPLETED' && r.status !== 'CANCELLED'">
+                <button class="btn btn-success btn-sm" style="margin-right: 4px;" (click)="completeRecord(r)" title="Complete">
+                  ✓
+                </button>
+                <button class="btn btn-danger btn-sm" (click)="cancelRecord(r)" title="Cancel">
+                  ✕
+                </button>
+              </ng-container>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="records.length === 0">
+          <td colspan="9">
+            <div class="empty-state">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+              <p>No maintenance activity found</p>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pagination" *ngIf="totalPages > 1 && !loading">
+    <button class="page-btn" (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 0">‹ Prev</button>
+    <button class="page-btn" *ngFor="let p of pages()" [class.active]="p === currentPage" (click)="goToPage(p)">{{ p + 1 }}</button>
+    <button class="page-btn" (click)="goToPage(currentPage + 1)" [disabled]="currentPage >= totalPages - 1">Next ›</button>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ editMode ? 'Edit Maintenance Record' : 'Schedule Maintenance' }}</h3>
+        <button class="btn-close" (click)="closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div *ngIf="error" class="alert alert-error">{{ error }}</div>
+        
+        <!-- Warranty Message -->
+        <div *ngIf="selectedAsset" [class]="'warranty-msg ' + (underWarranty ? 'warranty-active' : 'warranty-expired')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          <span *ngIf="underWarranty">This asset is currently UNDER WARRANTY.</span>
+          <span *ngIf="!underWarranty">Warranty for this asset has EXPIRED or is not available.</span>
+        </div>
+
+        <div class="form-group autocomplete-wrap" style="position:relative">
+          <label class="form-label">Asset *</label>
+          <div class="input-with-icon">
+            <input class="form-control" 
+                   [value]="selectedAsset ? (selectedAsset.assetTag + ' — ' + selectedAsset.name) : ''"
+                   (input)="onAssetInput($event)"
+                   (blur)="showAssetDropdown = false"
+                   [disabled]="editMode"
+                   placeholder="Search asset tag, name or serial...">
+            <div class="spinner-inline" *ngIf="loadingAssets"></div>
+          </div>
+          <div class="autocomplete-dropdown" *ngIf="showAssetDropdown">
+            <div class="autocomplete-item" *ngFor="let asset of assetSuggestions" (mousedown)="selectAsset(asset)">
+              <div class="item-main">{{ asset.assetTag }} — {{ asset.name }}</div>
+              <div class="item-sub">Status: {{ formatStatus(asset.status) }} | Category: {{ asset.categoryName }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Type *</label>
+            <select class="form-control" [(ngModel)]="form.maintenanceType">
+              <option *ngFor="let t of types" [value]="t">{{ t }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Status</label>
+            <select class="form-control" [(ngModel)]="form.status">
+              <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description *</label>
+          <textarea class="form-control" [(ngModel)]="form.description" rows="2" placeholder="Describe the maintenance work"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Performed By</label>
+            <input class="form-control" [(ngModel)]="form.performedBy" placeholder="Technician or vendor">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Cost (₹)</label>
+            <input class="form-control" type="number" [(ngModel)]="form.cost" placeholder="0.00">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Scheduled Date</label>
+            <input class="form-control" type="date" [(ngModel)]="form.scheduledDate">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Completed Date</label>
+            <input class="form-control" type="date" [(ngModel)]="form.completedDate">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeModal()">Cancel</button>
+        <button class="btn btn-primary" (click)="save()" [disabled]="saving">
+          {{ saving ? 'Saving...' : (editMode ? 'Update Record' : 'Create Record') }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

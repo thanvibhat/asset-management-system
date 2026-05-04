@@ -1,0 +1,67 @@
+<form [formGroup]="allocationForm" (ngSubmit)="submit()" class="allocation-form">
+  
+  <!-- Asset Selection -->
+  <div class="form-group autocomplete-wrap">
+    <label class="form-label">Asset (Available) *</label>
+    <div class="input-with-icon">
+      <input class="form-control" 
+             [value]="selectedAsset ? (selectedAsset.assetTag + ' — ' + selectedAsset.name) : ''"
+             (input)="onAssetInput($event)"
+             (blur)="showAssetDropdown = false"
+             placeholder="Search asset tag, name or serial...">
+      <div class="spinner-inline" *ngIf="loadingAssets"></div>
+    </div>
+    
+    <div class="autocomplete-dropdown" *ngIf="showAssetDropdown">
+      <div class="autocomplete-item" *ngFor="let asset of assetSuggestions" (mousedown)="selectAsset(asset)">
+        <div class="item-main">{{ asset.assetTag }} — {{ asset.name }}</div>
+        <div class="item-sub">Serial: {{ asset.serialNumber || 'N/A' }} | Category: {{ asset.categoryName }}</div>
+      </div>
+    </div>
+    <div *ngIf="allocationForm.get('assetId')?.touched && !selectedAsset" class="error-msg">Asset is required</div>
+  </div>
+
+  <!-- User Selection -->
+  <div class="form-group autocomplete-wrap">
+    <label class="form-label">Assign To *</label>
+    <div class="input-with-icon">
+      <input class="form-control" 
+             [value]="selectedUser ? selectedUser.fullName : ''"
+             (input)="onUserInput($event)"
+             (blur)="showUserDropdown = false"
+             placeholder="Search user name, email or ID...">
+      <div class="spinner-inline" *ngIf="loadingUsers"></div>
+    </div>
+    
+    <div class="autocomplete-dropdown" *ngIf="showUserDropdown">
+      <div class="autocomplete-item" *ngFor="let user of userSuggestions" (mousedown)="selectUser(user)">
+        <div class="item-main">{{ user.fullName }} ({{ user.username }})</div>
+        <div class="item-sub">Dept: {{ user.department || 'General' }} | Email: {{ user.email }}</div>
+      </div>
+    </div>
+    <div *ngIf="allocationForm.get('userId')?.touched && !selectedUser" class="error-msg">User is required</div>
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label class="form-label">Allocation Date *</label>
+      <input class="form-control" type="date" formControlName="allocationDate" [min]="minDate">
+      <div *ngIf="minDate" class="form-hint" style="font-size:11px;color:var(--text-3);margin-top:4px">Asset available from: {{ minDate }}</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Expected Return</label>
+      <input class="form-control" type="date" formControlName="expectedReturnDate" [min]="allocationForm.get('allocationDate')?.value">
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Allocation Details *</label>
+    <textarea class="form-control" formControlName="notes" rows="3" placeholder="Enter allocation details..."></textarea>
+    <div *ngIf="allocationForm.get('notes')?.touched && allocationForm.get('notes')?.errors?.['required']" class="error-msg">Allocation details are required</div>
+  </div>
+
+  <div class="form-actions">
+    <button type="button" class="btn btn-secondary" (click)="cancel.emit()">Cancel</button>
+    <button type="submit" class="btn btn-primary" [disabled]="allocationForm.invalid">Allocate Asset</button>
+  </div>
+</form>

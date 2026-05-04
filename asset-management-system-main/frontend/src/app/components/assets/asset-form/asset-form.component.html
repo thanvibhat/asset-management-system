@@ -1,0 +1,177 @@
+<form [formGroup]="assetForm" (ngSubmit)="submit()">
+  <!-- STEP 1 — Product Selection (Hide in edit mode) -->
+  <div class="form-group autocomplete-wrap" *ngIf="!editMode">
+    <label class="form-label">Product *</label>
+    <input class="form-control" [value]="productSearch" 
+           (input)="filterProducts($event)"
+           (blur)="showProductDropdown = false"
+           placeholder="Type to search products...">
+    <div class="autocomplete-dropdown" *ngIf="showProductDropdown && filteredProducts.length > 0">
+      <div class="autocomplete-item" *ngFor="let p of filteredProducts"
+           (mousedown)="selectProduct(p)">{{ p.productName }}</div>
+    </div>
+    <small class="form-hint">Selecting a product auto-fills category, manufacturer, and generates the asset tag.</small>
+  </div>
+
+  <div *ngIf="assetForm.get('productId')?.value || editMode">
+    <!-- STEP 2 — Asset Tag (read-only) -->
+    <div class="form-group">
+      <label class="form-label">Asset Tag</label>
+      <div class="input-readonly-wrap">
+        <input class="form-control input-readonly" [value]="loadingNextTag ? 'Generating...' : assetForm.get('assetTag')?.value" readonly>
+        <span class="readonly-badge">Auto</span>
+      </div>
+    </div>
+
+    <!-- STEP 3 — Rest of fields -->
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Name *</label>
+        <input class="form-control" formControlName="name" placeholder="Asset name">
+        <div *ngIf="assetForm.get('name')?.touched && assetForm.get('name')?.errors?.['required']" class="error-msg">Name is required</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Status *</label>
+        <select class="form-control" formControlName="status">
+          <option *ngFor="let s of statuses" [value]="s">{{ formatStatus(s) }}</option>
+        </select>
+        <div *ngIf="assetForm.get('status')?.touched && assetForm.get('status')?.errors?.['required']" class="error-msg">Status is required</div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group autocomplete-wrap">
+        <label class="form-label">Category *</label>
+        <input class="form-control" [value]="categorySearch" 
+               (input)="filterCategories($event)"
+               (blur)="showCategoryDropdown = false"
+               placeholder="Type to search categories...">
+        <div class="autocomplete-dropdown" *ngIf="showCategoryDropdown && filteredCategories.length > 0">
+          <div class="autocomplete-item" *ngFor="let c of filteredCategories"
+               (mousedown)="selectCategory(c)">{{ c.name }}</div>
+        </div>
+        <div *ngIf="assetForm.get('categoryId')?.touched && assetForm.get('categoryId')?.errors?.['required']" class="error-msg">Category is required</div>
+      </div>
+      
+      <!-- Location autocomplete field -->
+      <div class="form-group autocomplete-wrap">
+        <label class="form-label">Location</label>
+        <input class="form-control" formControlName="location"
+               (input)="filterLocations($event)"
+               (blur)="showLocationDropdown = false"
+               placeholder="Type to search locations...">
+        <div class="autocomplete-dropdown" *ngIf="showLocationDropdown && locationSuggestions.length > 0">
+          <div class="autocomplete-item" *ngFor="let s of locationSuggestions"
+               (mousedown)="selectLocation(s)">{{ s }}</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Dynamic Fields Section -->
+    <div *ngIf="dynamicFields.length > 0" class="dynamic-section" formGroupName="dynamicAttributes">
+      <p class="section-label">Product Attributes</p>
+      <div class="form-row">
+        <div class="form-group" *ngFor="let field of dynamicFields">
+          <label class="form-label">{{ field.name }} <span *ngIf="field.required" class="req-mark">*</span></label>
+          <input class="form-control" 
+                 [type]="field.type === 'number' ? 'number' : (field.type === 'date' ? 'date' : 'text')" 
+                 [formControlName]="field.name" 
+                 [placeholder]="'Enter ' + field.name">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <!-- Manufacturer field with special toggle -->
+      <div class="form-group autocomplete-wrap">
+        <label class="form-label">Manufacturer</label>
+        
+        <div class="manufacturer-control">
+          <button *ngIf="!showManufacturerInput" type="button" class="btn-toggle-input" (click)="toggleManufacturerInput()">
+            <span class="plus-icon">+</span> {{ assetForm.get('manufacturer')?.value || 'Add Manufacturer' }}
+          </button>
+          
+          <div class="input-with-action" *ngIf="showManufacturerInput">
+            <input class="form-control" formControlName="manufacturer"
+                   (input)="searchManufacturer($event)"
+                   (blur)="showManufacturerDropdown = false"
+                   placeholder="Search or type manufacturer..."
+                   #mInput>
+            <button class="btn-clear-inline" type="button" (click)="toggleManufacturerInput()">✕</button>
+          </div>
+          
+          <div class="autocomplete-dropdown" *ngIf="showManufacturerDropdown && showManufacturerInput">
+            <div class="autocomplete-item" *ngFor="let s of manufacturerSuggestions"
+                 (mousedown)="selectManufacturer(s)">{{ s }}</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Model</label>
+        <input class="form-control" formControlName="model" placeholder="Model name">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Serial Number</label>
+      <input class="form-control" formControlName="serialNumber" placeholder="Serial number">
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Purchase Date *</label>
+        <input class="form-control" type="date" formControlName="purchaseDate">
+        <div *ngIf="assetForm.get('purchaseDate')?.invalid && assetForm.get('purchaseDate')?.touched" class="text-danger" style="font-size: 11px;">
+          Purchase date is required
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Vendor *</label>
+        <select class="form-control" formControlName="vendorId">
+          <option [value]="null">Select Vendor</option>
+          <option *ngFor="let v of vendors" [value]="v.id">{{ v.name }}</option>
+        </select>
+        <div *ngIf="assetForm.get('vendorId')?.touched && assetForm.get('vendorId')?.errors?.['required']" class="error-msg">Vendor is required</div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Purchase Cost (₹)</label>
+        <input class="form-control" type="number" formControlName="purchaseCost" placeholder="0.00">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Warranty in Months</label>
+        <input class="form-control" type="number" formControlName="warrantyMonths" placeholder="0">
+      </div>
+    </div>
+
+    <div class="form-group autocomplete-wrap">
+      <label class="form-label">Parent Asset (Linked To)</label>
+      <input class="form-control" [value]="parentSearch" 
+             (input)="filterParents($event)"
+             (blur)="showParentDropdown = false"
+             placeholder="Type to search assets for linking...">
+      <div class="autocomplete-dropdown" *ngIf="showParentDropdown && filteredParents.length > 0">
+        <div class="autocomplete-item" *ngFor="let a of filteredParents"
+             (mousedown)="selectParent(a)">
+          <span style="font-weight: 600;">{{ a.assetTag }}</span> - {{ a.name }}
+        </div>
+      </div>
+      <small class="form-hint">Linking this device to a parent asset (e.g. Mouse linked to Laptop).</small>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Description</label>
+      <textarea class="form-control" formControlName="description" rows="2" placeholder="Optional notes"></textarea>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button type="button" class="btn btn-secondary" (click)="cancel.emit()">Cancel</button>
+    <button type="submit" class="btn btn-primary" [disabled]="assetForm.invalid">
+      {{ editMode ? 'Update Asset' : 'Create Asset' }}
+    </button>
+  </div>
+</form>

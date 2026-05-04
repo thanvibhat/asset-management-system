@@ -1,0 +1,133 @@
+<div class="page">
+  <div class="page-header">
+    <div class="page-title-group">
+      <h2 class="page-title">Allocations</h2>
+      <span class="page-subtitle">{{ totalElements }} total records</span>
+    </div>
+    <button *ngIf="auth.canWrite()" class="btn btn-primary" (click)="openModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New Allocation
+    </button>
+  </div>
+
+  <!-- Unified Filter Bar -->
+  <div class="filters card">
+    <div class="filter-row">
+      <div class="form-group filter-search">
+        <input class="form-control" type="text" placeholder="Search by name, tag, or serial..." 
+               [(ngModel)]="filters.search" (ngModelChange)="applyFilters()">
+      </div>
+      <div class="form-group">
+        <select class="form-control" [(ngModel)]="filters.status" (change)="applyFilters()">
+          <option value="">All Statuses</option>
+          <option value="AVAILABLE">Available</option>
+          <option value="ALLOCATED">Allocated</option>
+          <option value="UNDER_MAINTENANCE">Under maintenance</option>
+          <option value="DAMAGED">Damaged</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <select class="form-control" [(ngModel)]="filters.categoryId" (change)="applyFilters()">
+          <option value="">All Categories</option>
+          <option *ngFor="let c of categories" [value]="c.id">{{ c.name }}</option>
+        </select>
+      </div>
+      <button class="btn btn-secondary" (click)="resetFilters()">Reset</button>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="spinner"></div>
+
+  <div class="table-wrap" *ngIf="!loading">
+    <table>
+      <thead>
+        <tr>
+          <th>Asset</th>
+          <th>Category</th>
+          <th>Status</th>
+          <th>Assigned To</th>
+          <th>Allocation Details</th>
+          <th>Location</th>
+          <th *ngIf="auth.canWrite()">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let a of assets" [class.clickable-row]="a.status === 'AVAILABLE'" (click)="a.status === 'AVAILABLE' ? openModal(a) : null">
+          <td>
+            <div class="asset-info">
+              <span class="asset-tag">{{ a.assetTag }}</span>
+              <div class="asset-name">{{ a.name }}</div>
+            </div>
+          </td>
+          <td>{{ a.categoryName || '—' }}</td>
+          <td><span [class]="'badge badge-' + a.status.toLowerCase()">{{ formatStatus(a.status) }}</span></td>
+          <td>
+            <div class="user-cell" *ngIf="a.assignedToFullName">
+              <div class="user-avatar-sm">{{ a.assignedToFullName.charAt(0) }}</div>
+              <div>
+                <div class="user-fullname">{{ a.assignedToFullName }}</div>
+                <div class="username">&#64;{{ a.assignedToUsername }}</div>
+              </div>
+            </div>
+            <span *ngIf="!a.assignedToFullName" class="text-muted">—</span>
+          </td>
+          <td>
+            <div style="font-size:12px" *ngIf="a.allocatedAt">
+              <span style="color:var(--text-3)">Since:</span> {{ a.allocatedAt | date:'mediumDate' }}
+            </div>
+            <div style="font-size:12px" *ngIf="a.expectedReturnDate">
+              <span style="color:var(--text-3)">Due:</span> {{ a.expectedReturnDate | date:'mediumDate' }}
+            </div>
+            <span *ngIf="!a.allocatedAt" class="text-muted">—</span>
+          </td>
+          <td>{{ a.location || '—' }}</td>
+          <td *ngIf="auth.canWrite()">
+            <button *ngIf="a.status === 'AVAILABLE'" class="btn btn-primary btn-sm" (click)="$event.stopPropagation(); openModal(a)">Allocate</button>
+            <button *ngIf="a.status === 'ALLOCATED'" class="btn btn-success btn-sm" (click)="$event.stopPropagation(); confirmReturn(a.currentAllocationId!)">Return</button>
+            <span *ngIf="a.status !== 'AVAILABLE' && a.status !== 'ALLOCATED'" class="text-muted">—</span>
+          </td>
+        </tr>
+        <tr *ngIf="assets.length === 0">
+          <td colspan="7">
+            <div class="empty-state">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+              <p>No assets found</p>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  
+  <div class="pagination" *ngIf="totalPages > 1 && !loading">
+    <button class="page-btn" (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 0">‹ Prev</button>
+    <button class="page-btn" *ngFor="let p of pages()" [class.active]="p === currentPage" (click)="goToPage(p)">{{ p + 1 }}</button>
+    <button class="page-btn" (click)="goToPage(currentPage + 1)" [disabled]="currentPage >= totalPages - 1">Next ›</button>
+  </div>
+
+  <!-- Allocate Modal -->
+  <div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Allocate Asset</h3>
+        <button class="btn-close" (click)="closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div *ngIf="error" class="alert alert-error">{{ error }}</div>
+        <app-allocation-form [asset]="selectedAssetForModal" (save)="save($event)" (cancel)="closeModal()"></app-allocation-form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Return Confirm -->
+  <div class="modal-overlay" *ngIf="returnConfirmId" (click)="cancelReturn()">
+    <div class="modal confirm-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header"><h3>Confirm Return</h3><button class="btn-close" (click)="cancelReturn()">✕</button></div>
+      <div class="modal-body"><p style="color:var(--text-2)">Mark this asset as returned? The asset will be set back to Available.</p></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="cancelReturn()">Cancel</button>
+        <button class="btn btn-success" (click)="returnAsset()">Confirm Return</button>
+      </div>
+    </div>
+  </div>
+</div>

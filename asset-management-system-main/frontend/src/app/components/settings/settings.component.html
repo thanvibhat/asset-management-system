@@ -1,0 +1,245 @@
+<div class="page">
+  <div class="page-header">
+    <div class="page-title-group">
+      <h2 class="page-title">Settings</h2>
+      <span class="page-subtitle">Master data and configurations</span>
+    </div>
+  </div>
+
+  <div class="card" style="padding: 0;">
+    <div class="tabs">
+      <button class="tab-btn" [class.active]="activeTab === 'locations'" (click)="switchTab('locations')">Locations</button>
+      <button class="tab-btn" [class.active]="activeTab === 'manufacturers'" (click)="switchTab('manufacturers')">Manufacturers</button>
+      <button class="tab-btn" [class.active]="activeTab === 'roles'" (click)="switchTab('roles')">Roles & Attributes</button>
+    </div>
+
+    <div class="tab-content" style="padding: 20px;">
+      <!-- Loading Spinner -->
+      <div *ngIf="loading" class="spinner-container">
+        <div class="spinner"></div>
+      </div>
+
+      <div *ngIf="!loading">
+        <!-- TAB 1: LOCATIONS -->
+        <div *ngIf="activeTab === 'locations'">
+          <div class="section-header">
+            <h3>Locations</h3>
+            <button class="btn btn-primary btn-sm" (click)="openLocationModal()">+ Add Location</button>
+          </div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Description</th>
+                  <th style="width: 120px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let loc of locations">
+                  <td>{{ loc.name }}</td>
+                  <td>{{ loc.description }}</td>
+                  <td>
+                    <div class="btn-group">
+                      <button class="btn btn-xs btn-secondary" (click)="openLocationModal(loc)">Edit</button>
+                      <button class="btn btn-xs btn-danger" (click)="deleteLocation(loc.id)">Delete</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr *ngIf="locations.length === 0">
+                  <td colspan="3" class="text-center">No locations found.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="pagination" *ngIf="locTotalPages > 1" style="margin-top: 15px; display: flex; justify-content: center; gap: 8px;">
+            <button class="page-btn" [disabled]="locCurrentPage === 0" (click)="goToLocPage(locCurrentPage - 1)">&lt;</button>
+            <button *ngFor="let p of locPages()" class="page-btn" [class.active]="p === locCurrentPage" (click)="goToLocPage(p)">
+              {{ p + 1 }}
+            </button>
+            <button class="page-btn" [disabled]="locCurrentPage === locTotalPages - 1" (click)="goToLocPage(locCurrentPage + 1)">&gt;</button>
+          </div>
+        </div>
+
+        <!-- TAB 2: MANUFACTURERS -->
+        <div *ngIf="activeTab === 'manufacturers'">
+          <div class="section-header">
+            <h3>Manufacturers</h3>
+            <button class="btn btn-primary btn-sm" (click)="openManufacturerModal()">+ Add Manufacturer</button>
+          </div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Website</th>
+                  <th style="width: 120px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let m of manufacturers">
+                  <td>{{ m.name }}</td>
+                  <td><a [href]="m.website" target="_blank">{{ m.website }}</a></td>
+                  <td>
+                    <div class="btn-group">
+                      <button class="btn btn-xs btn-secondary" (click)="openManufacturerModal(m)">Edit</button>
+                      <button class="btn btn-xs btn-danger" (click)="deleteManufacturer(m.id)">Delete</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr *ngIf="manufacturers.length === 0">
+                  <td colspan="3" class="text-center">No manufacturers found.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="pagination" *ngIf="mfrTotalPages > 1" style="margin-top: 15px; display: flex; justify-content: center; gap: 8px;">
+            <button class="page-btn" [disabled]="mfrCurrentPage === 0" (click)="goToMfrPage(mfrCurrentPage - 1)">&lt;</button>
+            <button *ngFor="let p of mfrPages()" class="page-btn" [class.active]="p === mfrCurrentPage" (click)="goToMfrPage(p)">
+              {{ p + 1 }}
+            </button>
+            <button class="page-btn" [disabled]="mfrCurrentPage === mfrTotalPages - 1" (click)="goToMfrPage(mfrCurrentPage + 1)">&gt;</button>
+          </div>
+        </div>
+
+
+        <!-- TAB 4: ROLES & ATTRIBUTES -->
+        <div *ngIf="activeTab === 'roles'">
+          <div class="roles-section">
+            <div class="section-header">
+              <h3>System Roles</h3>
+            </div>
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Role Name</th>
+                    <th>Description</th>
+                    <th>Level</th>
+                    <th style="width: 100px;">Users</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>ROLE_ADMIN</strong></td>
+                    <td>Full system access including user management and system settings</td>
+                    <td><span class="badge badge-purple">System Admin</span></td>
+                    <td>2</td>
+                  </tr>
+                  <tr>
+                    <td><strong>ROLE_MANAGER</strong></td>
+                    <td>Can manage assets, allocations and maintenance for assigned departments</td>
+                    <td><span class="badge badge-blue">Management</span></td>
+                    <td>5</td>
+                  </tr>
+                  <tr>
+                    <td><strong>ROLE_USER</strong></td>
+                    <td>Standard user with read-only access to assigned assets</td>
+                    <td><span class="badge badge-gray">General</span></td>
+                    <td>42</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="attributes-section" style="margin-top: 20px;">
+            <div class="section-header">
+              <h3>Global Attributes</h3>
+              <button class="btn btn-primary btn-sm">+ Define Attribute</button>
+            </div>
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Attribute Name</th>
+                    <th>Data Type</th>
+                    <th>Scope</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Warranty Expiry</strong></td>
+                    <td>Date</td>
+                    <td><span class="badge">Asset Level</span></td>
+                    <td><span class="badge-success-text">Active</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Internal Asset ID</strong></td>
+                    <td>String</td>
+                    <td><span class="badge">Global</span></td>
+                    <td><span class="badge-success-text">Active</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Maintenance Frequency</strong></td>
+                    <td>Number (Days)</td>
+                    <td><span class="badge">Category Level</span></td>
+                    <td><span class="badge-success-text">Active</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LOCATION MODAL -->
+<div class="modal-overlay" *ngIf="showLocationModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>{{ editLocationId ? 'Edit' : 'Add' }} Location</h3>
+      <button class="btn-close" (click)="showLocationModal = false">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div *ngIf="error" class="alert alert-error">{{ error }}</div>
+      <div class="form-group">
+        <label class="form-label">Name *</label>
+        <input type="text" class="form-control" [(ngModel)]="locationForm.name" placeholder="e.g. Head Office">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-control" [(ngModel)]="locationForm.description" rows="3"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="showLocationModal = false">Cancel</button>
+      <button class="btn btn-primary" (click)="saveLocation()" [disabled]="saving || !locationForm.name">
+        {{ saving ? 'Saving...' : 'Save Location' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MANUFACTURER MODAL -->
+<div class="modal-overlay" *ngIf="showManufacturerModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>{{ editManufacturerId ? 'Edit' : 'Add' }} Manufacturer</h3>
+      <button class="btn-close" (click)="showManufacturerModal = false">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div *ngIf="error" class="alert alert-error">{{ error }}</div>
+      <div class="form-group">
+        <label class="form-label">Name *</label>
+        <input type="text" class="form-control" [(ngModel)]="manufacturerForm.name" placeholder="e.g. Dell">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Website</label>
+        <input type="text" class="form-control" [(ngModel)]="manufacturerForm.website" placeholder="https://www.dell.com">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="showManufacturerModal = false">Cancel</button>
+      <button class="btn btn-primary" (click)="saveManufacturer()" [disabled]="saving || !manufacturerForm.name">
+        {{ saving ? 'Saving...' : 'Save Manufacturer' }}
+      </button>
+    </div>
+  </div>
+</div>
+

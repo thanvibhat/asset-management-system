@@ -1,0 +1,709 @@
+<div class="page" (click)="closeMenus()">
+  <div class="page-header">
+    <div class="page-title-group">
+      <h2 class="page-title">Assets</h2>
+      <span class="page-subtitle">{{ totalElements }} total assets</span>
+    </div>
+    <div class="row-actions" style="display: flex; gap: 10px;">
+      <button *ngIf="auth.canWrite()" class="btn btn-secondary" (click)="openExcelUpload()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+        </svg>
+        Excel Upload
+      </button>
+      <button class="btn btn-secondary" (click)="downloadAllAssetsExcel()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+        </svg>
+        Download Excel
+      </button>
+      <button *ngIf="auth.canWrite()" class="btn btn-primary" (click)="openAddAsset()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add Asset
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters card">
+    <div class="filter-row">
+      <div class="form-group filter-search">
+        <input class="form-control" type="text" placeholder="Search by name, tag, or serial..." 
+               [(ngModel)]="filters.search" (ngModelChange)="onSearchChange()" (keyup.enter)="applyFilters()">
+      </div>
+      <div class="form-group">
+        <select class="form-control" [(ngModel)]="filters.status" (change)="applyFilters()">
+          <option value="">All Statuses</option>
+          <option *ngFor="let s of statuses" [value]="s">{{ formatStatus(s) }}</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <select class="form-control" [(ngModel)]="filters.categoryId" (change)="applyFilters()">
+          <option value="">All Categories</option>
+          <option *ngFor="let c of categories" [value]="c.id">{{ c.name }}</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <select class="form-control" [(ngModel)]="filters.vendorId" (change)="applyFilters()">
+          <option value="">All Vendors</option>
+          <option *ngFor="let v of vendors" [value]="v.id">{{ v.name }}</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" (click)="applyFilters()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Search
+      </button>
+      <button class="btn btn-secondary" (click)="resetFilters()">Reset</button>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div *ngIf="loading" class="spinner"></div>
+  <div *ngIf="!loading">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Tag</th>
+            <th>Name</th>
+            <th>Category</th>
+            <th>Status</th>
+            <th>Location</th>
+            <th>Purchase Cost</th>
+            <th>Warranty</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let a of assets">
+            <td><span class="asset-tag">{{ a.assetTag }}</span></td>
+            <td>
+              <div class="asset-name">{{ a.name }}</div>
+              <div class="asset-model" *ngIf="a.manufacturer">{{ a.manufacturer }} {{ a.model }}</div>
+            </td>
+            <td>{{ a.categoryName || '—' }}</td>
+            <td><span [class]="badgeClass(a.status)">{{ formatStatus(a.status) }}</span></td>
+            <td>{{ a.location || '—' }}</td>
+            <td>{{ a.purchaseCost ? ('₹' + a.purchaseCost.toLocaleString('en-IN')) : '—' }}</td>
+            <td>
+              <div *ngIf="a.warrantyMonths">
+                {{ a.warrantyMonths }} months
+                <div class="warranty-expiry" *ngIf="a.warrantyExpiryDate" 
+                     [style.color]="isExpired(a.warrantyExpiryDate) ? 'var(--danger)' : 'var(--text-2)'"
+                     style="font-size: 11px; margin-top: 2px; font-weight: 500;">
+                  Ends: {{ a.warrantyExpiryDate | date:'MMM d, y' }}
+                </div>
+              </div>
+              <span *ngIf="!a.warrantyMonths">—</span>
+            </td>
+            <td>
+              <div class="row-actions" style="position:relative;">
+                <button class="btn btn-secondary btn-sm"
+                        (click)="toggleMenu(a.id, $event)"
+                        title="More options"
+                        style="padding: 4px 10px; font-size: 16px; font-weight: 700;
+                               letter-spacing: 1px; line-height: 1;">
+                  ⋮
+                </button>
+                <div *ngIf="openMenuId === a.id"
+                     style="position:absolute;top:calc(100% + 4px);right:0;z-index:300;
+                            background:var(--dropdown-bg,var(--bg-card));
+                            border:1px solid var(--border);border-radius:8px;
+                            box-shadow:var(--shadow-md);min-width:190px;padding:4px 0;">
+                  <button *ngIf="auth.canWrite()"
+                          style="display:flex;align-items:center;gap:10px;width:100%;
+                                 text-align:left;padding:10px 16px;background:none;
+                                 border:none;font-size:14px;color:var(--text);cursor:pointer;"
+                          (click)="openEditFromMenu(a)"
+                          onmouseover="this.style.background='var(--bg-hover, rgba(255,255,255,0.05))'"
+                          onmouseout="this.style.background='none'">
+                    <span style="font-size: 16px;">✏️</span> <span>Edit Asset</span>
+                  </button>
+          
+                  <button style="display:flex;align-items:center;gap:10px;width:100%;
+                                 text-align:left;padding:10px 16px;background:none;
+                                 border:none;font-size:14px;color:var(--text);cursor:pointer;"
+                          (click)="openHistory(a)"
+                          onmouseover="this.style.background='var(--bg-hover, rgba(255,255,255,0.05))'"
+                          onmouseout="this.style.background='none'">
+                    <span style="font-size: 16px;">📋</span> <span>Events / History</span>
+                  </button>
+          
+                  <button style="display:flex;align-items:center;gap:10px;width:100%;
+                                 text-align:left;padding:10px 16px;background:none;
+                                 border:none;font-size:14px;color:var(--text);cursor:pointer;"
+                          (click)="openWarrantyInfo(a)"
+                          onmouseover="this.style.background='var(--bg-hover, rgba(255,255,255,0.05))'"
+                          onmouseout="this.style.background='none'">
+                    <span style="font-size: 16px;">🛡️</span> <span>Warranty Info</span>
+                  </button>
+
+                  <button style="display:flex;align-items:center;gap:10px;width:100%;
+                                 text-align:left;padding:10px 16px;background:none;
+                                 border:none;font-size:14px;color:var(--text);cursor:pointer;"
+                          (click)="openDeviceLinking(a)"
+                          onmouseover="this.style.background='var(--bg-hover, rgba(255,255,255,0.05))'"
+                          onmouseout="this.style.background='none'">
+                    <span style="font-size: 16px;">🔗</span> <span>Device Linking</span>
+                  </button>
+          
+                  <button *ngIf="auth.canWrite()"
+                          style="display:flex;align-items:center;gap:10px;width:100%;
+                                 text-align:left;padding:10px 16px;background:none;
+                                 border:none;font-size:14px;color:var(--text);cursor:pointer;"
+                          (click)="openReplaceComponent(a)"
+                          onmouseover="this.style.background='var(--bg-hover, rgba(255,255,255,0.05))'"
+                          onmouseout="this.style.background='none'">
+                    <span style="font-size: 16px;">🔩</span> <span>Replace Component</span>
+                  </button>
+          
+                  <div style="height:1px;background:var(--border);margin:4px 0;"></div>
+          
+                  <button *ngIf="auth.isAdmin()"
+                          style="display:flex;align-items:center;gap:8px;width:100%;
+                                 text-align:left;padding:9px 14px;background:none;
+                                 border:none;font-size:13px;color:var(--danger);cursor:pointer;"
+                          (click)="confirmDelete(a.id); openMenuId=null">
+                    🗑️ <span>Delete Asset</span>
+                  </button>
+                </div>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="assets.length === 0">
+            <td colspan="8">
+              <div class="empty-state">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+                <p>No assets found</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-container" *ngIf="totalPages > 1">
+      <div class="pagination-info">
+        Showing {{ currentPage * pageSize + 1 }} to {{ (currentPage + 1) * pageSize > totalElements ? totalElements : (currentPage + 1) * pageSize }} of {{ totalElements }} assets
+      </div>
+      <div class="pagination-controls">
+        <button class="page-btn" (click)="goToPage(0)" [disabled]="currentPage === 0">
+          First
+        </button>
+        <button class="page-btn" (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 0">
+          Prev
+        </button>
+        
+        <div class="page-numbers">
+          <button *ngFor="let p of pages()" 
+                  class="page-btn" 
+                  [class.active]="p === currentPage" 
+                  (click)="goToPage(p)">
+            {{ p + 1 }}
+          </button>
+        </div>
+
+        <button class="page-btn" (click)="goToPage(currentPage + 1)" [disabled]="currentPage >= totalPages - 1">
+          Next
+        </button>
+        <button class="page-btn" (click)="goToPage(totalPages - 1)" [disabled]="currentPage >= totalPages - 1">
+          Last
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create/Edit Modal -->
+  <div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ editMode ? 'Edit Asset' : 'Add New Asset' }}</h3>
+        <button class="btn-close" (click)="closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div *ngIf="error" class="alert alert-error">{{ error }}</div>
+        
+        <app-asset-form 
+          [asset]="selectedAsset" 
+          [editMode]="editMode"
+          [products]="products"
+          [categories]="categories"
+          [locations]="locations"
+          [manufacturers]="manufacturers"
+          [vendors]="vendors"
+          (save)="save($event)"
+          (cancel)="closeModal()">
+        </app-asset-form>
+
+        <!-- Components Section -->
+        <div class="components-section" *ngIf="editMode && selectedAsset" style="margin-top: 24px; border-top: 1px solid var(--border); padding-top: 24px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="margin: 0; font-size: 16px; font-weight: 600;">Components</h3>
+            <button *ngIf="auth.canWrite()" class="btn btn-secondary btn-sm" (click)="showReplaceForm = !showReplaceForm">
+              <svg *ngIf="!showReplaceForm" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" style="margin-right: 4px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              {{ showReplaceForm ? 'Cancel' : 'Replace Component' }}
+            </button>
+          </div>
+
+          <!-- Replace Form -->
+          <div *ngIf="showReplaceForm" class="card" style="padding: 16px; margin-bottom: 16px; background: var(--bg-3); border-radius: var(--radius); border: 1px solid var(--border-2);">
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; align-items: end;">
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label">Type</label>
+                <select class="form-control" [(ngModel)]="replaceRequest.componentType">
+                  <option value="">Select Type</option>
+                  <option *ngFor="let type of componentTypes" [value]="type">{{ type }}</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label">Serial No.</label>
+                <input class="form-control" type="text" placeholder="Serial" [(ngModel)]="replaceRequest.serialNumber">
+              </div>
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label">Warranty</label>
+                <input class="form-control" type="number" placeholder="Months" [(ngModel)]="replaceRequest.warrantyMonths">
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 16px;">
+              <button class="btn btn-primary btn-sm" (click)="submitReplaceComponent(selectedAsset.id)" [disabled]="!replaceRequest.componentType">Submit Replacement</button>
+              <button class="btn btn-secondary btn-sm" (click)="showReplaceForm = false">Cancel</button>
+            </div>
+          </div>
+
+          <!-- Components Table -->
+          <div *ngIf="loadingComponents" class="spinner" style="padding: 20px;"></div>
+          <div *ngIf="!loadingComponents && assetComponents.length > 0" class="table-wrap" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border);">
+            <table>
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Serial No.</th>
+                  <th>Source</th>
+                  <th>Status</th>
+                  <th>Installed</th>
+                  <th>Removed</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let c of assetComponents">
+                  <td><b style="color: var(--text)">{{ c.componentType }}</b></td>
+                  <td>{{ c.serialNumber || '—' }}</td>
+                  <td><span class="badge" style="background: var(--bg-2); color: var(--text-2); border: 1px solid var(--border); font-size: 10px;">{{ c.source }}</span></td>
+                  <td><span [class]="'badge badge-' + c.status.toLowerCase()">{{ formatStatus(c.status) }}</span></td>
+                  <td>{{ c.installationDate | date:'MMM d, y' }}</td>
+                  <td>{{ c.removalDate ? (c.removalDate | date:'MMM d, y') : '—' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div *ngIf="!loadingComponents && assetComponents.length === 0" class="empty-state" style="padding: 24px; border: 1px dashed var(--border); border-radius: var(--radius); background: var(--bg);">
+            <p style="font-size: 13px; color: var(--text-3);">No components tracked for this asset.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirm -->
+  <div class="modal-overlay" *ngIf="deleteConfirmId" (click)="cancelDelete()">
+    <div class="modal confirm-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header"><h3>Confirm Delete</h3><button class="btn-close" (click)="cancelDelete()">✕</button></div>
+      <div class="modal-body"><p style="color:var(--text-2)">Are you sure you want to delete this asset? This action cannot be undone.</p></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="cancelDelete()">Cancel</button>
+        <button class="btn btn-danger" (click)="deleteAsset()">Delete Asset</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Import Modal -->
+  <div class="modal-overlay" *ngIf="showImportModal" (click)="closeImportModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Import Assets from Excel</h3>
+        <button class="btn-close" (click)="closeImportModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="alert" style="background:rgba(217, 119, 6, 0.1); border: 1px solid var(--warning); color: var(--warning); padding: 12px; border-radius: 6px; font-size: 13px; margin-bottom: 16px;">
+          ⚠ Dynamic fields (product attributes) are NOT imported. You must fill them manually for each asset after upload.
+        </div>
+        <p style="font-size:13px;color:var(--text-2);margin-bottom:16px">
+          Upload an Excel file (.xlsx) with asset data. 
+          Columns should be: <b>Name, Serial Number, Category, Status, Purchase Date, Cost</b>.
+        </p>
+        <div class="form-group">
+          <label class="form-label">Select Excel File (.xlsx)</label>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <input class="form-control" type="file" accept=".xlsx" (change)="onFileSelected($event)" style="flex: 1;">
+            <button class="btn btn-secondary btn-sm" (click)="downloadTemplate()" style="white-space: nowrap;">
+              Download Template
+            </button>
+          </div>
+        </div>
+        <div *ngIf="importResult" class="import-result">
+          <div class="import-summary">
+            <span class="result-ok">✓ {{ importResult.imported }} imported</span>
+            <span class="result-fail" *ngIf="importResult.failed > 0">✗ {{ importResult.failed }} failed</span>
+          </div>
+          <div *ngIf="importResult.errors.length > 0" class="import-errors">
+            <p style="font-size:12px;font-weight:600;color:var(--danger);margin-bottom:8px">Errors:</p>
+            <div *ngFor="let e of importResult.errors" style="font-size:12px;color:var(--danger);margin-bottom:4px">{{ e }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeImportModal()">Close</button>
+        <button class="btn btn-primary" (click)="importAssets()" [disabled]="!importFile || importing">
+          {{ importing ? 'Importing...' : 'Upload Assets' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Replace Component Modal -->
+  <div class="modal-overlay" *ngIf="showReplaceModal" (click)="closeReplaceModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+
+      <div class="modal-header">
+        <h3>Replace Component — {{ replacingAsset?.name }}</h3>
+        <button class="btn-close" (click)="closeReplaceModal()">✕</button>
+      </div>
+
+      <div class="modal-body">
+
+        <!-- Section 1: New Component -->
+        <p style="font-size:13px;font-weight:600;color:var(--text-1);
+                  margin-bottom:12px;padding-bottom:8px;
+                  border-bottom:1px solid var(--border)">
+          New Component Being Added
+        </p>
+
+        <div class="form-group">
+          <label class="form-label">Component Type *</label>
+          <select class="form-control" [(ngModel)]="replaceForm.componentType">
+            <option value="">Select component type</option>
+            <option *ngFor="let t of componentTypes" [value]="t">{{ t }}</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Serial Number (optional)</label>
+          <input class="form-control" type="text"
+                 placeholder="e.g. SN-123456"
+                 [(ngModel)]="replaceForm.serialNumber">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Warranty Months (optional)</label>
+          <input class="form-control" type="number" min="0"
+                 placeholder="e.g. 12"
+                 [(ngModel)]="replaceForm.warrantyMonths">
+        </div>
+
+        <!-- Divider -->
+        <p style="font-size:13px;font-weight:600;color:var(--text-1);
+                  margin:20px 0 12px;padding-bottom:8px;
+                  border-bottom:1px solid var(--border)">
+          What Happened to the Old Component?
+        </p>
+
+        <div class="form-group">
+          <label class="form-label">Disposition (optional)</label>
+          <select class="form-control" [(ngModel)]="replaceForm.oldComponentDisposition">
+            <option value="">— Select disposition —</option>
+            <option *ngFor="let d of dispositionOptions" [value]="d.value">
+              {{ d.label }}
+            </option>
+          </select>
+          <small style="font-size:11px;color:var(--text-3)">
+            Leave blank if this is the first time adding this component type.
+          </small>
+        </div>
+
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeReplaceModal()">Cancel</button>
+        <button class="btn btn-primary"
+                (click)="submitReplaceModal()"
+                [disabled]="replaceSaving">
+          {{ replaceSaving ? 'Saving...' : 'Confirm Replacement' }}
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- History Modal -->
+  <div class="modal-overlay" *ngIf="showHistoryModal" (click)="closeHistoryModal()">
+    <div class="modal" style="max-width:700px;width:96%;"
+         (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>📋 History — {{ historyAsset?.assetTag }}: {{ historyAsset?.name }}</h3>
+        <button class="btn-close" (click)="closeHistoryModal()">✕</button>
+      </div>
+      <div class="modal-body" style="padding:0;max-height:520px;overflow-y:auto;">
+
+        <div *ngIf="loadingHistory"
+             style="padding:40px;text-align:center;font-size:13px;color:var(--text-3);">
+          Loading history...
+        </div>
+
+        <div *ngIf="!loadingHistory && assetHistory.length === 0"
+             style="padding:40px;text-align:center;font-size:13px;color:var(--text-3);">
+          No events recorded yet for this asset.
+        </div>
+
+        <div *ngFor="let ev of assetHistory"
+             style="display:flex;gap:14px;padding:14px 20px;
+                    border-bottom:1px solid var(--border);">
+          <div style="font-size:20px;width:26px;flex-shrink:0;
+                      padding-top:2px;text-align:center;">
+            {{ getEventIcon(ev.eventType) }}
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;justify-content:space-between;
+                        align-items:baseline;gap:8px;flex-wrap:wrap;">
+              <span style="font-size:13px;font-weight:600;color:var(--text);">
+                {{ ev.label }}
+              </span>
+              <span style="font-size:11px;color:var(--text-3);white-space:nowrap;">
+                {{ ev.eventDate | date:'dd MMM yyyy, h:mm a' }}
+              </span>
+            </div>
+            <div *ngIf="ev.performedBy"
+                 style="font-size:12px;color:var(--text-3);margin-top:2px;">
+              By {{ ev.performedBy }}
+            </div>
+            <div *ngIf="ev.notes"
+                 style="font-size:12px;color:var(--text-2);margin-top:3px;">
+              {{ ev.notes }}
+            </div>
+            <div *ngIf="ev.fromStatus && ev.toStatus"
+                 style="margin-top:6px;font-size:12px;display:flex;align-items:center;gap:6px;">
+              <span [class]="badgeClass(ev.fromStatus)">{{ formatStatus(ev.fromStatus) }}</span>
+              <span style="color:var(--text-3)">→</span>
+              <span [class]="badgeClass(ev.toStatus)">{{ formatStatus(ev.toStatus) }}</span>
+            </div>
+            <div *ngIf="parseMeta(ev.metadata).length > 0"
+                 style="display:flex;flex-wrap:wrap;gap:5px;margin-top:7px;">
+              <span *ngFor="let kv of parseMeta(ev.metadata)"
+                    style="font-size:11px;padding:2px 8px;
+                           background:var(--bg-3);border:1px solid var(--border);
+                           border-radius:99px;color:var(--text-2);">
+                {{ kv.key }}: {{ kv.value }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeHistoryModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Warranty Modal -->
+  <div class="modal-overlay" *ngIf="showWarrantyModal" (click)="closeWarrantyModal()">
+    <div class="modal" style="max-width:420px;"
+         (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>🛡️ Warranty — {{ warrantyAsset?.assetTag }}</h3>
+        <button class="btn-close" (click)="closeWarrantyModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:10px 0;color:var(--text-3);width:150px;">Asset Name</td>
+            <td style="padding:10px 0;font-weight:500;">{{ warrantyAsset?.name }}</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:10px 0;color:var(--text-3);">Asset Tag</td>
+            <td style="padding:10px 0;font-family:monospace;font-size:12px;">
+              {{ warrantyAsset?.assetTag }}
+            </td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:10px 0;color:var(--text-3);">Purchase Date</td>
+            <td style="padding:10px 0;">
+              {{ warrantyAsset?.purchaseDate ? (warrantyAsset.purchaseDate | date:'dd MMM yyyy') : '—' }}
+            </td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:10px 0;color:var(--text-3);">Warranty Period</td>
+            <td style="padding:10px 0;">
+              {{ warrantyAsset?.warrantyMonths ? warrantyAsset.warrantyMonths + ' months' : '—' }}
+            </td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:10px 0;color:var(--text-3);">Expires On</td>
+            <td style="padding:10px 0;">
+              <span *ngIf="getWarrantyExpiry(warrantyAsset)"
+                    [style.color]="isWarrantyExpired(warrantyAsset) ? 'var(--danger)' : 'var(--success)'">
+                {{ getWarrantyExpiry(warrantyAsset) }}
+                <span style="font-weight:600;">
+                  {{ isWarrantyExpired(warrantyAsset) ? ' (Expired)' : ' (Active)' }}
+                </span>
+              </span>
+              <span *ngIf="!getWarrantyExpiry(warrantyAsset)" style="color:var(--text-3)">
+                No warranty data
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:10px 0;color:var(--text-3);">Manufacturer</td>
+            <td style="padding:10px 0;">
+              {{ warrantyAsset?.manufacturer || '—' }}
+              {{ warrantyAsset?.model ? ' · ' + warrantyAsset.model : '' }}
+            </td>
+          </tr>
+        </table>
+
+        <!-- Component Warranties Section -->
+        <div *ngIf="assetComponents.length > 0" style="margin-top: 24px;">
+          <h4 style="font-size: 13px; font-weight: 600; margin-bottom: 12px; color: var(--text); border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+            Component Warranties
+          </h4>
+          <div *ngFor="let c of assetComponents" 
+               style="padding: 10px; background: var(--bg-3); border-radius: 6px; border: 1px solid var(--border); margin-bottom: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+              <div>
+                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+                  <span style="font-size: 12px; font-weight: 600; color: var(--text);">{{ c.componentType }}</span>
+                  <span [class]="'badge badge-' + c.status.toLowerCase()" 
+                        style="font-size: 9px; padding: 1px 6px; height: auto; line-height: 1.2;">
+                    {{ formatStatus(c.status) }}
+                  </span>
+                </div>
+                <div style="font-size: 11px; color: var(--text-3);">SN: {{ c.serialNumber || '—' }}</div>
+                <div *ngIf="c.oldComponentDisposition" 
+                     style="font-size: 11px; margin-top: 4px; padding: 4px 8px; background: var(--bg-1); border-radius: 4px; border: 1px dashed var(--border); color: var(--text-2);">
+                  <span style="font-weight: 600; font-size: 10px; color: var(--text-3); text-transform: uppercase; margin-right: 4px;">Disposition:</span>
+                  {{ formatDisposition(c.oldComponentDisposition) }}
+                </div>
+              </div>
+              <div style="text-align: right;">
+                <div *ngIf="c.warrantyMonths" style="font-size: 11px; font-weight: 500;">
+                  <span [style.color]="isComponentWarrantyExpired(c) ? 'var(--danger)' : 'var(--success)'">
+                    {{ getComponentWarrantyExpiry(c) }}
+                    <span style="font-weight:700;">{{ isComponentWarrantyExpired(c) ? ' (Expired)' : ' (Active)' }}</span>
+                  </span>
+                </div>
+                <div *ngIf="!c.warrantyMonths" style="font-size: 11px; color: var(--text-3);">No separate warranty</div>
+                <div style="font-size: 10px; color: var(--text-3);">Installed: {{ c.installationDate | date:'dd MMM yyyy' }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeWarrantyModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Device Linking Modal -->
+  <div class="modal-overlay" *ngIf="showLinkingModal" (click)="closeLinkingModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()" style="max-width: 600px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Device Linking</h3>
+        <button class="close-btn" (click)="closeLinkingModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="asset-info-summary" style="margin-bottom: 20px;">
+          <div style="font-size: 11px; text-transform: uppercase; color: var(--text-3); font-weight: 600; margin-bottom: 4px;">Parent Asset</div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-size: 16px; font-weight: 700; color: var(--primary);">{{ linkingAsset?.name }}</div>
+              <div style="font-size: 12px; color: var(--text-2);">Tag: {{ linkingAsset?.assetTag }} · SN: {{ linkingAsset?.serialNumber || '—' }}</div>
+            </div>
+            <button class="btn btn-sm btn-primary" (click)="showAddDeviceSearch = !showAddDeviceSearch" style="padding: 6px 12px; font-size: 11px;">
+              {{ showAddDeviceSearch ? 'Cancel' : '+ Link New Device' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Add Link Search Section -->
+        <div *ngIf="showAddDeviceSearch" style="margin-bottom: 24px; padding: 15px; background: var(--bg-1); border-radius: 8px; border: 1px solid var(--primary); box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+          <div class="form-group autocomplete-wrap" style="margin-bottom: 0;">
+            <label class="form-label" style="font-size: 11px;">Search Asset to Link</label>
+            <input class="form-control" [value]="deviceSearchQuery" 
+                   (input)="searchDevicesForLinking($event)"
+                   placeholder="Type tag or name to search...">
+            
+            <div class="search-results-list" *ngIf="deviceSearchResults.length > 0" 
+                 style="margin-top: 8px; max-height: 250px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; z-index: 9999; position: relative; background: var(--bg-3); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+              <div *ngFor="let res of deviceSearchResults" 
+                   (mousedown)="linkNewDevice(res)"
+                   (click)="linkNewDevice(res)"
+                   style="padding: 12px 16px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; position: relative;"
+                   class="link-search-row">
+                <div style="pointer-events: none;">
+                  <div style="font-size: 13px; font-weight: 600; color: var(--text);">{{ res.name }}</div>
+                  <div style="font-size: 11px; color: var(--text-3);">{{ res.assetTag }} · SN: {{ res.serialNumber || '—' }}</div>
+                </div>
+                <button type="button" class="btn btn-sm btn-primary" style="font-size: 10px; padding: 4px 10px; pointer-events: none;">
+                  Link
+                </button>
+              </div>
+            </div>
+            <div *ngIf="deviceSearchQuery.length >= 2 && deviceSearchResults.length === 0" 
+                 style="font-size: 11px; color: var(--text-3); margin-top: 8px; text-align: center;">
+              No matching assets found
+            </div>
+          </div>
+        </div>
+
+        <h4 style="font-size: 13px; font-weight: 600; margin-bottom: 12px; color: var(--text); border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+          Linked Items (Children & Components)
+        </h4>
+
+        <div *ngIf="linkedDevices.length === 0" style="padding: 30px; text-align: center; color: var(--text-3); background: var(--bg-2); border-radius: 8px; border: 1px dashed var(--border);">
+          <div style="font-size: 24px; margin-bottom: 8px;">🔗</div>
+          <p style="margin: 0;">No children or components linked to this asset.</p>
+        </div>
+
+        <div class="child-device-list" *ngIf="linkedDevices.length > 0">
+          <div *ngFor="let item of linkedDevices" 
+               style="padding: 10px; background: var(--bg-3); border-radius: 6px; border: 1px solid var(--border); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="font-size: 20px;">{{ item.isAsset ? '📱' : '⚙️' }}</div>
+              <div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 13px; font-weight: 600; color: var(--text);">
+                    {{ item.isAsset ? item.name : item.componentType }}
+                  </span>
+                  <span class="badge" [ngClass]="item.isAsset ? 'badge-info' : 'badge-secondary'" style="font-size: 10px;">
+                    {{ item.isAsset ? 'Linked Device' : 'Component' }}
+                  </span>
+                  <button *ngIf="item.isAsset" 
+                          class="btn btn-icon btn-outline-danger" 
+                          (click)="unlinkDevice(item)" 
+                          title="Unlink Device"
+                          style="padding: 2px 6px; font-size: 10px; margin-left: 8px;">
+                    <i class="fas fa-unlink"></i> Unlink
+                  </button>
+                </div>
+                <div style="font-size: 11px; color: var(--text-3);">
+                  {{ item.isAsset ? 'Tag: ' + item.assetTag : 'SN: ' + (item.serialNumber || '—') }}
+                  <span *ngIf="item.isComponent && item.oldComponentDisposition"> · Disp: {{ formatDisposition(item.oldComponentDisposition) }}</span>
+                </div>
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <span [class]="'badge badge-' + item.status.toLowerCase()" style="font-size: 10px;">{{ formatStatus(item.status) }}</span>
+              <div style="font-size: 10px; color: var(--text-3); margin-top: 4px;">
+                {{ (item.isAsset ? item.serialNumber : item.installationDate | date:'dd MMM yyyy') || '—' }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeLinkingModal()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

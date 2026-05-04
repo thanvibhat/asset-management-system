@@ -1,0 +1,100 @@
+<div class="page">
+  <div class="chat-container">
+    <div class="chat-header">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <h2>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+            AI Asset Analyst
+          </h2>
+          <p>Ask about maintenance costs, asset health, and retirement planning.</p>
+        </div>
+        <button class="btn btn-outline-light btn-sm" (click)="downloadReport()" [disabled]="loading">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="me-1">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Executive Report
+        </button>
+      </div>
+    </div>
+
+    <div class="chat-messages" #scrollContainer>
+      <!-- Pre-built Question Chips (Only shown if no messages yet) -->
+      <div *ngIf="messages.length === 0 && !loading" class="text-center py-4">
+        <p class="text-muted mb-3">Try asking one of these:</p>
+        <div class="suggested-chips justify-content-center">
+          <div class="chip" *ngFor="let q of starterQuestions" (click)="submitQuestion(q)">
+            {{ q }}
+          </div>
+        </div>
+      </div>
+
+      <div *ngFor="let msg of messages; let i = index" [ngClass]="msg.role === 'user' ? 'message message-user' : 'message message-ai'">
+        <div class="message-bubble">
+          {{ msg.text }}
+          
+          <!-- Supporting Data Table (AI Only) -->
+          <div *ngIf="msg.role === 'ai' && msg.metricsUsed && msg.metricsUsed.length > 0" class="supporting-data">
+            <div class="data-toggle" (click)="msg.showData = !msg.showData">
+              <span>View supporting data</span>
+              <svg [style.transform]="msg.showData ? 'rotate(180deg)' : 'rotate(0)'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+            <div *ngIf="msg.showData">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Asset</th>
+                    <th class="text-right">Maint. Cost</th>
+                    <th class="text-right">Repairs</th>
+                    <th class="text-right">Ratio</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let m of msg.metricsUsed | slice:0:5">
+                    <td>{{ m.assetName }}</td>
+                    <td class="text-right">{{ m.totalMaintenanceCost | currency:'INR':'symbol':'1.0-0' }}</td>
+                    <td class="text-right">{{ m.correctiveRepairCount }}</td>
+                    <td class="text-right">{{ m.maintenanceToPurchaseRatio | number:'1.2-2' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Suggested Follow-up Questions (AI Only, Last Message Only) -->
+          <div *ngIf="msg.role === 'ai' && i === messages.length - 1 && msg.suggestedQuestions && msg.suggestedQuestions.length > 0" class="suggested-chips">
+            <div class="chip" *ngFor="let sq of msg.suggestedQuestions" (click)="submitQuestion(sq)">
+              {{ sq }}
+            </div>
+          </div>
+        </div>
+        <div class="message-time">{{ msg.timestamp | date:'shortTime' }}</div>
+      </div>
+
+      <!-- Loading Skeleton -->
+      <div *ngIf="loading" class="message message-ai">
+        <div class="skeleton-bubble"></div>
+        <div class="message-time">Just now</div>
+      </div>
+    </div>
+
+    <div class="chat-input-area">
+      <form (submit)="submitQuestion()" class="input-wrapper">
+        <input 
+          type="text" 
+          class="chat-input" 
+          placeholder="Ask a question about your assets..." 
+          [(ngModel)]="userInput" 
+          name="userInput"
+          [disabled]="loading"
+          autocomplete="off"
+        >
+        <button type="submit" class="btn-send" [disabled]="loading || !userInput.trim()">
+          Send
+        </button>
+      </form>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,28 @@
+ALTER TABLE users ADD COLUMN IF NOT EXISTS department VARCHAR(100);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS employee_id VARCHAR(50) UNIQUE;
+
+ALTER TABLE assets DROP CONSTRAINT IF EXISTS assets_status_check;
+ALTER TABLE assets ADD CONSTRAINT assets_status_check
+  CHECK (status IN ('AVAILABLE','ALLOCATED','UNDER_MAINTENANCE','DAMAGED','LOST','RETIRED'));
+
+ALTER TABLE vendors ADD COLUMN IF NOT EXISTS contact_person VARCHAR(100);
+ALTER TABLE vendors ADD COLUMN IF NOT EXISTS vendor_type VARCHAR(30) DEFAULT 'PROCUREMENT';
+ALTER TABLE vendors ADD COLUMN IF NOT EXISTS gst_number VARCHAR(50);
+
+ALTER TABLE procurement ADD COLUMN IF NOT EXISTS invoice_number VARCHAR(100);
+ALTER TABLE procurement ADD COLUMN IF NOT EXISTS quantity INTEGER;
+
+ALTER TABLE allocations ADD COLUMN IF NOT EXISTS condition_at_return VARCHAR(50);
+
+CREATE TABLE IF NOT EXISTS documents (
+  id BIGSERIAL PRIMARY KEY,
+  file_name VARCHAR(255) NOT NULL,
+  original_name VARCHAR(255) NOT NULL,
+  content_type VARCHAR(100),
+  file_size BIGINT,
+  entity_type VARCHAR(50) NOT NULL CHECK (entity_type IN ('ASSET','MAINTENANCE','PROCUREMENT')),
+  entity_id BIGINT NOT NULL,
+  uploaded_by BIGINT REFERENCES users(id),
+  uploaded_at TIMESTAMP DEFAULT NOW()
+);
+CREATE INDEX idx_documents_entity ON documents(entity_type, entity_id);

@@ -1,0 +1,142 @@
+<div class="page">
+  <div class="page-header">
+    <div class="page-title-group">
+      <h2 class="page-title">Product Master</h2>
+      <span class="page-subtitle">Manage asset types and depreciation rules</span>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-primary" (click)="openProductModal()">+ Add Product</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div *ngIf="loading" class="spinner-container">
+      <div class="spinner"></div>
+    </div>
+
+    <div *ngIf="!loading">
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Product Name</th>
+              <th>Manufacturer</th>
+              <th>Category</th>
+              <th>Prefix</th>
+              <th>Depreciation (%)</th>
+              <th>Attributes</th>
+              <th style="width: 120px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let p of products">
+              <td>{{ p.productName }}</td>
+              <td>{{ p.manufacturer }}</td>
+              <td>{{ p.categoryName }}</td>
+              <td><span class="badge">{{ p.assetPrefix }}</span></td>
+              <td><strong>{{ p.depreciationPercentage || 0 }}%</strong></td>
+              <td>{{ parseAttributes(p.additionalAttributes).length }}</td>
+              <td>
+                <div class="btn-group">
+                  <button class="btn btn-xs btn-secondary" (click)="openProductModal(p)">Edit</button>
+                  <button class="btn btn-xs btn-danger" (click)="deleteProduct(p.id)">Delete</button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="products.length === 0">
+              <td colspan="7" class="text-center">No products found.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pagination" *ngIf="totalPages > 1" style="padding: 15px; border-top: 1px solid var(--border); display: flex; justify-content: center; gap: 8px;">
+        <button class="page-btn" [disabled]="currentPage === 0" (click)="goToPage(currentPage - 1)">&lt;</button>
+        <button *ngFor="let p of pages()" class="page-btn" [class.active]="p === currentPage" (click)="goToPage(p)">
+          {{ p + 1 }}
+        </button>
+        <button class="page-btn" [disabled]="currentPage === totalPages - 1" (click)="goToPage(currentPage + 1)">&gt;</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PRODUCT MODAL -->
+<div class="modal-overlay" *ngIf="showProductModal">
+  <div class="modal" style="max-width: 600px;">
+    <div class="modal-header">
+      <h3>{{ editProductId ? 'Edit' : 'Add' }} Product</h3>
+      <button class="btn-close" (click)="showProductModal = false">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div *ngIf="error" class="alert alert-error">{{ error }}</div>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Product Name *</label>
+          <input type="text" class="form-control" [(ngModel)]="productForm.productName">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select class="form-control" [(ngModel)]="productForm.categoryId">
+            <option [ngValue]="null">Select Category</option>
+            <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Manufacturer</label>
+          <input type="text" class="form-control" [(ngModel)]="productForm.manufacturer">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Depreciation Percentage (%)</label>
+          <input type="number" class="form-control" [(ngModel)]="productForm.depreciationPercentage" min="0" max="100">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-control" [(ngModel)]="productForm.description" rows="2"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Asset Prefix</label>
+        <input type="text" class="form-control" [(ngModel)]="productForm.assetPrefix" 
+               maxlength="10" placeholder="e.g. LAP" [disabled]="!!editProductId">
+        <small class="text-muted">Auto-populated if blank. Cannot be edited after creation.</small>
+      </div>
+
+      <div class="attributes-section">
+        <div class="section-header" style="margin-top: 15px;">
+          <label class="form-label" style="margin: 0;">Additional Attributes</label>
+          <button class="btn btn-sm btn-secondary" (click)="addAttributeRow()">+ Add</button>
+        </div>
+        
+        <div class="attr-rows" style="margin-top: 10px;">
+          <div *ngFor="let row of productForm.attributeRows; let i = index" class="attr-row">
+            <input type="text" class="form-control" [(ngModel)]="row.name" placeholder="Name" style="flex: 2;">
+            <select class="form-control" [(ngModel)]="row.dataType" style="flex: 1.5;">
+              <option value="String">String</option>
+              <option value="Number">Number</option>
+              <option value="Boolean">Boolean</option>
+              <option value="Date">Date</option>
+            </select>
+            <label class="checkbox-label" style="flex: 1; font-size: 11px;">
+              <input type="checkbox" [(ngModel)]="row.mandatory"> Mand.
+            </label>
+            <button class="btn-remove" (click)="removeAttributeRow(i)">&times;</button>
+          </div>
+          <p *ngIf="productForm.attributeRows.length === 0" class="text-muted" style="font-size: 12px; text-align: center;">No additional attributes defined.</p>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="showProductModal = false">Cancel</button>
+      <button class="btn btn-primary" (click)="saveProduct()" [disabled]="saving || !productForm.productName">
+        {{ saving ? 'Saving...' : 'Save Product' }}
+      </button>
+    </div>
+  </div>
+</div>

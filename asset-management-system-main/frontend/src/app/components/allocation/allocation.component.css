@@ -1,0 +1,55 @@
+.page { padding: 16px; max-width: 1400px; }
+.page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.page-title-group { display: flex; align-items: baseline; gap: 10px; }
+.page-title { font-size: 22px; font-family: var(--font-display); margin: 0; }
+.page-subtitle { color: var(--text-3); font-size: 12px; font-weight: 500; }
+
+.asset-info { display: flex; flex-direction: column; gap: 4px; }
+.asset-tag-sm { font-family: monospace; font-size: 11px; background: var(--bg-3); padding: 2px 7px; border-radius: 5px; color: var(--accent-2); border: 1px solid var(--border); display: inline-block; width: fit-content; }
+.asset-name { font-size: 12px; color: var(--text-2); }
+
+.user-cell { display: flex; align-items: center; gap: 8px; }
+.user-avatar-sm { width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+.user-fullname { font-size: 13px; font-weight: 500; color: var(--text); }
+.username { font-size: 11px; color: var(--text-3); }
+
+.text-muted { color: var(--text-3); font-size: 12px; }
+.confirm-modal { max-width: 400px; }
+textarea.form-control { resize: vertical; min-height: 60px; }
+
+.search-field-wrap { position: relative; }
+.search-input-row { position: relative; display: flex; align-items: center; }
+.search-input { padding-right: 36px; }
+.search-clear { position: absolute; right: 10px; background: none; border: none; color: var(--text-3); cursor: pointer; font-size: 14px; padding: 4px; line-height: 1; }
+.search-clear:hover { color: var(--text); }
+.search-dropdown { position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 200; background: var(--dropdown-bg); border: 1px solid var(--border); border-radius: 6px; box-shadow: var(--shadow-md); max-height: 240px; overflow-y: auto; }
+.search-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid var(--border); }
+.search-item:last-child { border-bottom: none; }
+.search-item:hover { background: var(--dropdown-hover); }
+.search-item-main { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.search-item-name { font-size: 13px; font-weight: 500; color: var(--text); }
+.search-item-badge { font-size: 12px; color: var(--text-3); }
+.search-item-sub { font-size: 12px; color: var(--text-3); padding-left: 2px; }
+.search-no-results { padding: 12px 14px; font-size: 13px; color: var(--text-3); text-align: center; }
+.asset-tag-pill { background: rgba(37, 99, 235, 0.1); color: var(--primary); font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 4px; white-space: nowrap; }
+.selected-card { margin-top: 8px; padding: 10px 12px; background: var(--bg-neutral); border: 1px solid var(--border); border-radius: 6px; }
+.selected-info { display: flex; align-items: center; gap: 10px; }
+.selected-name { font-size: 13px; font-weight: 500; color: var(--text); }
+.selected-sub { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+
+/* Tabs */
+.tabs { display: flex; gap: 24px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 0; }
+.tab-btn { background: none; border: none; padding: 10px 4px; font-size: 14px; font-weight: 500; color: var(--text-3); cursor: pointer; position: relative; transition: all 0.2s; }
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--primary); font-weight: 600; }
+.tab-btn.active::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background: var(--primary); border-radius: 2px 2px 0 0; }
+
+/* Filters */
+.filters { margin-bottom: 20px; padding: 16px; background: var(--bg-1); border: 1px solid var(--border); border-radius: 8px; }
+.filter-row { display: flex; gap: 12px; align-items: center; }
+.filter-search { flex: 1; }
+.form-group { margin: 0; }
+
+.asset-tag { font-family: monospace; font-size: 11px; background: var(--bg-3); padding: 2px 7px; border-radius: 5px; color: var(--accent-2); border: 1px solid var(--border); }
+.clickable-row { cursor: pointer; transition: background 0.2s; }
+.clickable-row:hover { background: var(--bg-2); }
