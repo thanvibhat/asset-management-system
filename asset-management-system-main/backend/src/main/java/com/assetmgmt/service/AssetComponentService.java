@@ -61,6 +61,11 @@ public class AssetComponentService {
         Optional<AssetComponent> existing = componentRepository.findByAssetIdAndComponentTypeIgnoreCaseAndStatus(
                 assetId, request.getComponentType(), ComponentStatus.ACTIVE);
 
+        if (request.getOldComponentDisposition() == null
+            || request.getOldComponentDisposition().isBlank()) {
+            throw new com.assetmgmt.exception.BusinessException("Please specify what happened to the old component (Disposition is required)");
+        }
+
         if (existing.isEmpty()) {
             // First time this component type is tracked for this asset - create a BACKFILLED record
             AssetComponent backfilled = AssetComponent.builder()
@@ -70,17 +75,12 @@ public class AssetComponentService {
                     .installationDate(asset.getPurchaseDate() != null ? asset.getPurchaseDate() : LocalDate.now())
                     .removalDate(LocalDate.now())
                     .status(ComponentStatus.REPLACED)
+                    .oldComponentDisposition(AssetComponent.OldComponentDisposition.valueOf(request.getOldComponentDisposition()))
                     .build();
             componentRepository.save(backfilled);
         } else {
             // Mark existing as REPLACED
             AssetComponent current = existing.get();
-            
-            if (request.getOldComponentDisposition() == null
-                || request.getOldComponentDisposition().isBlank()) {
-                throw new com.assetmgmt.exception.BusinessException("Please specify what happened to the old component (Disposition is required)");
-            }
-
             current.setStatus(ComponentStatus.REPLACED);
             current.setRemovalDate(LocalDate.now());
             current.setOldComponentDisposition(
