@@ -485,36 +485,60 @@ export class AssetsComponent implements OnInit {
     if (item.isAsset) {
       this.unlinkDevice(item);
     } else if (item.isComponent) {
-      if (confirm(`Are you sure you want to remove this ${item.componentType} component record from the system?`)) {
-        this.http.delete(`/api/assets/${this.linkingAsset.id}/components/${item.id}`).subscribe({
-          next: () => {
-            this.toast.success(`Successfully removed ${item.componentType}`);
-            this.loadLinkingData(this.linkingAsset.id);
-          },
-          error: (err) => {
-            console.error('Error removing component', err);
-            this.toast.error(err.error?.message || 'Failed to remove component');
+      const originalCombined = [...this.combined];
+      this.combined = this.combined.filter(c => !(c.isComponent && c.id === item.id));
+      
+      let isUndone = false;
+      this.toast.success(
+        `Removed ${item.componentType}`,
+        'Undo',
+        () => {
+          isUndone = true;
+          this.combined = originalCombined;
+          this.toast.success('Restored component');
+        },
+        () => {
+          if (!isUndone) {
+            this.http.delete(`/api/assets/${this.linkingAsset.id}/components/${item.id}`).subscribe({
+              next: () => { console.log(`Permanently removed component ${item.id}`); },
+              error: (err) => {
+                this.toast.error(err.error?.message || 'Failed to remove component');
+                this.combined = originalCombined;
+              }
+            });
           }
-        });
-      }
+        }
+      );
     }
   }
 
   unlinkDevice(device: any): void {
     if (!device.isAsset) return;
     
-    if (confirm(`Are you sure you want to unlink ${device.assetTag}?`)) {
-      this.http.put(`/api/assets/${device.id}/unlink`, {}).subscribe({
-        next: () => {
-          this.toast.success(`Successfully unlinked ${device.assetTag}`);
-          this.loadLinkingData(this.linkingAsset.id);
-        },
-        error: (err) => {
-          console.error('Error unlinking device', err);
-          this.toast.error(err.error?.message || 'Failed to unlink device');
+    const originalCombined = [...this.combined];
+    this.combined = this.combined.filter(item => !(item.isAsset && item.id === device.id));
+    
+    let isUndone = false;
+    this.toast.success(
+      `Unlinked ${device.assetTag}`,
+      'Undo',
+      () => {
+        isUndone = true;
+        this.combined = originalCombined;
+        this.toast.success('Restored link');
+      },
+      () => {
+        if (!isUndone) {
+          this.http.put(`/api/assets/${device.id}/unlink`, {}).subscribe({
+            next: () => { console.log(`Permanently unlinked ${device.assetTag}`); },
+            error: (err) => {
+              this.toast.error(err.error?.message || 'Failed to unlink device');
+              this.combined = originalCombined;
+            }
+          });
         }
-      });
-    }
+      }
+    );
   }
 
   closeLinkingModal(): void {
