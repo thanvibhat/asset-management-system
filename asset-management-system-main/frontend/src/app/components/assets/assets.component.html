@@ -109,7 +109,7 @@
                      style="position:absolute;top:calc(100% + 4px);right:0;z-index:300;
                             background:var(--dropdown-bg,var(--bg-card));
                             border:1px solid var(--border);border-radius:8px;
-                            box-shadow:var(--shadow-md);min-width:190px;padding:4px 0;">
+                            box-shadow:var(--shadow-md);min-width:160px;padding:4px 0;">
                   <button *ngIf="auth.canWrite()"
                           style="display:flex;align-items:center;gap:10px;width:100%;
                                  text-align:left;padding:10px 16px;background:none;
@@ -117,7 +117,7 @@
                           (click)="openEditFromMenu(a)"
                           onmouseover="this.style.background='var(--bg-hover, rgba(255,255,255,0.05))'"
                           onmouseout="this.style.background='none'">
-                    <span style="font-size: 16px;">✏️</span> <span>Edit Asset</span>
+                    <span>Edit Asset</span>
                   </button>
           
                   <button style="display:flex;align-items:center;gap:10px;width:100%;
@@ -126,7 +126,7 @@
                           (click)="openHistory(a)"
                           onmouseover="this.style.background='var(--bg-hover, rgba(255,255,255,0.05))'"
                           onmouseout="this.style.background='none'">
-                    <span style="font-size: 16px;">📋</span> <span>Events / History</span>
+                    <span>Events / History</span>
                   </button>
           
                   <button style="display:flex;align-items:center;gap:10px;width:100%;
@@ -135,7 +135,7 @@
                           (click)="openWarrantyInfo(a)"
                           onmouseover="this.style.background='var(--bg-hover, rgba(255,255,255,0.05))'"
                           onmouseout="this.style.background='none'">
-                    <span style="font-size: 16px;">🛡️</span> <span>Warranty Info</span>
+                    <span>Warranty Info</span>
                   </button>
 
                   <button style="display:flex;align-items:center;gap:10px;width:100%;
@@ -144,17 +144,18 @@
                           (click)="openDeviceLinking(a)"
                           onmouseover="this.style.background='var(--bg-hover, rgba(255,255,255,0.05))'"
                           onmouseout="this.style.background='none'">
-                    <span style="font-size: 16px;">🔗</span> <span>Device Linking</span>
+                    <span>Device Linking</span>
                   </button>
           
                   <button *ngIf="auth.canWrite()"
                           style="display:flex;align-items:center;gap:10px;width:100%;
                                  text-align:left;padding:10px 16px;background:none;
-                                 border:none;font-size:14px;color:var(--text);cursor:pointer;"
+                                 border:none;font-size:14px;color:var(--text);cursor:pointer;
+                                 white-space:nowrap;"
                           (click)="openReplaceComponent(a)"
                           onmouseover="this.style.background='var(--bg-hover, rgba(255,255,255,0.05))'"
                           onmouseout="this.style.background='none'">
-                    <span style="font-size: 16px;">🔩</span> <span>Replace Component</span>
+                    <span>Replace Component</span>
                   </button>
           
                   <div style="height:1px;background:var(--border);margin:4px 0;"></div>
@@ -162,9 +163,10 @@
                   <button *ngIf="auth.isAdmin()"
                           style="display:flex;align-items:center;gap:8px;width:100%;
                                  text-align:left;padding:9px 14px;background:none;
-                                 border:none;font-size:13px;color:var(--danger);cursor:pointer;"
+                                 border:none;font-size:13px;color:var(--danger);cursor:pointer;
+                                 white-space:nowrap;"
                           (click)="confirmDelete(a.id); openMenuId=null">
-                    🗑️ <span>Delete Asset</span>
+                    <span>Delete Asset</span>
                   </button>
                 </div>
               </div>
@@ -247,27 +249,34 @@
           </div>
 
           <!-- Replace Form -->
-          <div *ngIf="showReplaceForm" class="card" style="padding: 16px; margin-bottom: 16px; background: var(--bg-3); border-radius: var(--radius); border: 1px solid var(--border-2);">
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; align-items: end;">
-              <div class="form-group" style="margin: 0;">
-                <label class="form-label">Type</label>
-                <select class="form-control" [(ngModel)]="replaceRequest.componentType">
+          <div *ngIf="showReplaceForm" class="card" style="padding: 12px; margin-bottom: 16px; background: var(--bg-3); border-radius: var(--radius); border: 1px solid var(--border-2);">
+            <div style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: nowrap;">
+              <div class="form-group" style="margin: 0; flex: 1; min-width: 120px;">
+                <label class="form-label" style="font-size: 11px;">Type</label>
+                <select class="form-control" [(ngModel)]="replaceRequest.componentType" style="height: 32px; font-size: 13px;">
                   <option value="">Select Type</option>
                   <option *ngFor="let type of componentTypes" [value]="type">{{ type }}</option>
                 </select>
               </div>
-              <div class="form-group" style="margin: 0;">
-                <label class="form-label">Serial No.</label>
-                <input class="form-control" type="text" placeholder="Serial" [(ngModel)]="replaceRequest.serialNumber">
+              <div class="form-group" style="margin: 0; flex: 1.2; min-width: 140px;">
+                <label class="form-label" style="font-size: 11px;">Serial No.</label>
+                <input class="form-control" type="text" placeholder="Serial" [(ngModel)]="replaceRequest.serialNumber" style="height: 32px; font-size: 13px;">
               </div>
-              <div class="form-group" style="margin: 0;">
-                <label class="form-label">Warranty</label>
-                <input class="form-control" type="number" placeholder="Months" [(ngModel)]="replaceRequest.warrantyMonths">
+              <div class="form-group" style="margin: 0; width: 100px;">
+                <label class="form-label" style="font-size: 11px;">Warranty</label>
+                <input class="form-control" type="number" placeholder="Mo" [(ngModel)]="replaceRequest.warrantyMonths" style="height: 32px; font-size: 13px;">
               </div>
-            </div>
-            <div style="display: flex; gap: 8px; margin-top: 16px;">
-              <button class="btn btn-primary btn-sm" (click)="submitReplaceComponent(selectedAsset.id)" [disabled]="!replaceRequest.componentType">Submit Replacement</button>
-              <button class="btn btn-secondary btn-sm" (click)="showReplaceForm = false">Cancel</button>
+              <div class="form-group" style="margin: 0; flex: 1; min-width: 140px;">
+                <label class="form-label" style="font-size: 11px;">Old Part Disposition *</label>
+                <select class="form-control" [(ngModel)]="replaceRequest.oldComponentDisposition" style="height: 32px; font-size: 13px;" required>
+                  <option value="">— Select —</option>
+                  <option *ngFor="let d of dispositionOptions" [value]="d.value">{{ d.label }}</option>
+                </select>
+              </div>
+              <div style="display: flex; gap: 6px; margin-bottom: 1px;">
+                <button class="btn btn-primary btn-sm" (click)="submitReplaceComponent(selectedAsset.id)" [disabled]="!replaceRequest.componentType" style="height: 32px; padding: 0 12px; font-size: 12px; white-space: nowrap;">Submit</button>
+                <button class="btn btn-secondary btn-sm" (click)="showReplaceForm = false" style="height: 32px; padding: 0 12px; font-size: 12px;">Cancel</button>
+              </div>
             </div>
           </div>
 
@@ -409,15 +418,15 @@
         </p>
 
         <div class="form-group">
-          <label class="form-label">Disposition (optional)</label>
-          <select class="form-control" [(ngModel)]="replaceForm.oldComponentDisposition">
-            <option value="">— Select disposition —</option>
+          <label class="form-label">Disposition *</label>
+          <select class="form-control" [(ngModel)]="replaceForm.oldComponentDisposition" required>
+            <option value="">— Select what happened to old part —</option>
             <option *ngFor="let d of dispositionOptions" [value]="d.value">
               {{ d.label }}
             </option>
           </select>
           <small style="font-size:11px;color:var(--text-3)">
-            Leave blank if this is the first time adding this component type.
+            This is required for replacement tracking.
           </small>
         </div>
 
@@ -686,14 +695,15 @@
                     <i class="fas fa-unlink"></i> Unlink
                   </button>
                 </div>
-                <div style="font-size: 11px; color: var(--text-3);">
-                  {{ item.isAsset ? 'Tag: ' + item.assetTag : 'SN: ' + (item.serialNumber || '—') }}
-                  <span *ngIf="item.isComponent && item.oldComponentDisposition"> · Disp: {{ formatDisposition(item.oldComponentDisposition) }}</span>
+                <div style="font-size: 11px; color: var(--text-3); display: flex; align-items: center; gap: 8px; margin-top: 2px;">
+                  <span>{{ item.isAsset ? 'Tag: ' + item.assetTag : 'SN: ' + (item.serialNumber || '—') }}</span>
                 </div>
               </div>
             </div>
             <div style="text-align: right;">
-              <span [class]="'badge badge-' + item.status.toLowerCase()" style="font-size: 10px;">{{ formatStatus(item.status) }}</span>
+              <span [class]="'badge badge-' + item.status.toLowerCase()" style="font-size: 10px;">
+                {{ (item.status?.toUpperCase() === 'REPLACED') ? (formatDisposition(item.oldComponentDisposition) || 'Old Part') : formatStatus(item.status) }}
+              </span>
               <div style="font-size: 10px; color: var(--text-3); margin-top: 4px;">
                 {{ (item.isAsset ? item.serialNumber : item.installationDate | date:'dd MMM yyyy') || '—' }}
               </div>

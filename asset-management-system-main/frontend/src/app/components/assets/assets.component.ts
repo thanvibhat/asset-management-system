@@ -88,7 +88,8 @@ export class AssetsComponent implements OnInit {
   replaceRequest = {
     componentType: '',
     serialNumber: '',
-    warrantyMonths: undefined as number | undefined
+    warrantyMonths: undefined as number | undefined,
+    oldComponentDisposition: ''
   };
 
   // New Component replacement modal properties
@@ -307,10 +308,45 @@ export class AssetsComponent implements OnInit {
   cancelDelete(): void { this.deleteConfirmId = null; }
   deleteAsset(): void {
     if (!this.deleteConfirmId) return;
-    this.assetService.deleteAsset(this.deleteConfirmId).subscribe({
-      next: () => { this.deleteConfirmId = null; this.loadAssets(); },
-      error: err => alert(err.error?.message || 'Error deleting asset')
-    });
+    
+    const assetId = this.deleteConfirmId;
+    const assetToDelete = this.assets.find(a => a.id === assetId);
+    if (!assetToDelete) return;
+
+    // 1. Remove from local list immediately
+    const originalAssets = [...this.assets];
+    this.assets = this.assets.filter(a => a.id !== assetId);
+    this.deleteConfirmId = null;
+
+    // 2. Show toast with Undo action
+    let isUndone = false;
+
+    this.toast.show(
+      `Asset "${assetToDelete.name}" deleted`,
+      'info',
+      'Undo',
+      () => {
+        // Undo action
+        isUndone = true;
+        this.assets = originalAssets;
+        this.toast.success('Restored asset');
+      },
+      () => {
+        // onRemove callback (called when toast expires or is closed, UNLESS Undo was clicked)
+        if (!isUndone) {
+          this.assetService.deleteAsset(assetId).subscribe({
+            next: () => {
+              console.log(`Permanently deleted asset ${assetId}`);
+              // No need to loadAssets because it's already removed locally
+            },
+            error: (err) => {
+              this.toast.error(err.error?.message || 'Error deleting asset');
+              this.assets = originalAssets; // Restore if delete failed
+            }
+          });
+        }
+      }
+    );
   }
 
   goToPage(page: number): void { this.currentPage = page; this.loadAssets(); }
@@ -379,10 +415,27 @@ export class AssetsComponent implements OnInit {
         // Fetch components
         this.http.get<any[]>(`/api/assets/${assetId}/components`).subscribe({
           next: (components) => {
+            console.log('Linking components debug:', components);
+            // Filter components based on user rules: 
+            // Only show REPLACED components if they are UNDER_MAINTENANCE, REPURPOSED_INTERNAL, or IN_STORAGE.
+            const filterOut = ['DISCARDED', 'RETURNED_TO_VENDOR', 'DONATED'];
+            const filteredComponents = components.filter(c => {
+              const status = c.status?.toUpperCase();
+              if (status === 'REPLACED') {
+                // If disposition exists, only filter out the "gone" ones.
+                // If it's null, we'll keep it for now (might be older data or backfilled).
+                if (c.oldComponentDisposition) {
+                  return !filterOut.includes(c.oldComponentDisposition);
+                }
+                return true; 
+              }
+              return true; // Keep ACTIVE, etc.
+            });
+
             // Combine them into a unified list
             const combined: any[] = [
               ...assets.map(a => ({ ...a, isAsset: true })),
-              ...components.map(c => ({ ...c, isComponent: true }))
+              ...filteredComponents.map(c => ({ ...c, isComponent: true }))
             ];
             this.linkedDevices = combined;
           },
@@ -510,12 +563,20 @@ export class AssetsComponent implements OnInit {
 
   submitReplaceComponent(assetId: number): void {
     if (!this.replaceRequest.componentType) return;
+    
+    // Validate mandatory disposition
+    if (!this.replaceRequest.oldComponentDisposition) {
+      this.toast.error('Please specify what happened to the old component (Disposition is required)');
+      return;
+    }
+
     this.assetService.replaceComponent(assetId, this.replaceRequest).subscribe({
       next: (data) => {
         this.assetComponents = data;
         this.showReplaceForm = false;
+        if (this.linkingAsset) this.loadLinkingData(this.linkingAsset.id);
         this.replaceRequest = {
-          componentType: '', serialNumber: '', warrantyMonths: undefined
+          componentType: '', serialNumber: '', warrantyMonths: undefined, oldComponentDisposition: ''
         };
       },
       error: (err) => { console.error(err); }
@@ -580,6 +641,10 @@ export class AssetsComponent implements OnInit {
       this.toast.error('Please select a component type');
       return;
     }
+    if (!this.replaceForm.oldComponentDisposition) {
+      this.toast.error('Please specify what happened to the old component (Disposition is required)');
+      return;
+    }
     this.replaceSaving = true;
     const payload: any = {
       componentType: this.replaceForm.componentType,
@@ -594,6 +659,7 @@ export class AssetsComponent implements OnInit {
         this.replaceSaving = false;
         this.closeReplaceModal();
         this.toast.success('Component replaced successfully');
+        if (this.linkingAsset) this.loadLinkingData(this.linkingAsset.id);
         this.loadAssets(); // Refresh assets table
       },
       error: (err: any) => {

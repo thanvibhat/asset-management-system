@@ -19,6 +19,9 @@ import { ToastService, Toast } from '../../../services/toast.service';
           <svg *ngIf="toast.type === 'info'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
         </div>
         <div class="toast-message">{{ toast.message }}</div>
+        <button *ngIf="toast.action" class="toast-action" (click)="handleAction(toast)">
+          {{ toast.actionLabel }}
+        </button>
         <button class="toast-close" (click)="remove(toast.id)">✕</button>
       </div>
     </div>
@@ -96,6 +99,24 @@ import { ToastService, Toast } from '../../../services/toast.service';
       background: var(--bg);
       color: var(--text);
     }
+
+    .toast-action {
+      background: none;
+      border: 1px solid var(--primary);
+      color: var(--primary);
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .toast-action:hover {
+      background: var(--primary);
+      color: white;
+    }
   `]
 })
 export class ToastComponent implements OnInit {
@@ -111,5 +132,14 @@ export class ToastComponent implements OnInit {
 
   remove(id: number): void {
     this.toastService.remove(id);
+  }
+
+  handleAction(toast: Toast): void {
+    if (toast.action) {
+      toast.action();
+      // Remove onRemove callback before removing to avoid triggering the actual deletion
+      toast.onRemove = undefined;
+      this.remove(toast.id);
+    }
   }
 }

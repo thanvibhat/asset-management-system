@@ -75,16 +75,18 @@ public class AssetComponentService {
         } else {
             // Mark existing as REPLACED
             AssetComponent current = existing.get();
+            
+            if (request.getOldComponentDisposition() == null
+                || request.getOldComponentDisposition().isBlank()) {
+                throw new com.assetmgmt.exception.BusinessException("Please specify what happened to the old component (Disposition is required)");
+            }
+
             current.setStatus(ComponentStatus.REPLACED);
             current.setRemovalDate(LocalDate.now());
-
-            if (request.getOldComponentDisposition() != null
-                && !request.getOldComponentDisposition().isBlank()) {
-                current.setOldComponentDisposition(
-                    AssetComponent.OldComponentDisposition
-                        .valueOf(request.getOldComponentDisposition())
-                );
-            }
+            current.setOldComponentDisposition(
+                AssetComponent.OldComponentDisposition
+                    .valueOf(request.getOldComponentDisposition())
+            );
             
             componentRepository.save(current);
         }

@@ -92,6 +92,22 @@ public class Asset {
     @OneToMany(mappedBy = "parentAsset", cascade = CascadeType.ALL)
     private List<Asset> childAssets;
 
+    @JsonIgnore
+    @OneToMany(mappedBy = "asset", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<AssetComponent> components;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "asset", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<MaintenanceRecord> maintenanceRecords;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "asset", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Allocation> allocations;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "asset", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<AssetStatusHistory> statusHistory;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
