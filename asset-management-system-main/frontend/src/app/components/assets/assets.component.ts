@@ -493,7 +493,7 @@ export class AssetsComponent implements OnInit {
           },
           error: (err) => {
             console.error('Error removing component', err);
-            this.toast.error('Failed to remove component');
+            this.toast.error(err.error?.message || 'Failed to remove component');
           }
         });
       }

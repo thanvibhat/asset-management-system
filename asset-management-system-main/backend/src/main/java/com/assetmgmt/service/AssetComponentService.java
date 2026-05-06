@@ -124,6 +124,14 @@ public class AssetComponentService {
 
     @Transactional
     public void deleteComponent(Long componentId) {
-        componentRepository.deleteById(componentId);
+        AssetComponent component = componentRepository.findById(componentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Component", componentId));
+        
+        Asset asset = component.getAsset();
+        if (asset != null && asset.getComponents() != null) {
+            asset.getComponents().remove(component);
+        }
+        
+        componentRepository.delete(component);
     }
 }
