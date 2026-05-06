@@ -188,7 +188,7 @@ tr:hover td { background: var(--bg-3); }
 .badge-available, .badge-active, .badge-completed { background: var(--bg-success); color: var(--success); }
 .badge-allocated, .badge-scheduled { background: var(--bg-info); color: var(--info); }
 .badge-maintenance, .badge-in_progress { background: var(--bg-warning); color: var(--warning); }
-.badge-retired, .badge-returned, .badge-viewer { background: var(--bg-neutral); color: var(--neutral); }
+.badge-retired, .badge-returned, .badge-replaced, .badge-viewer { background: var(--bg-neutral); color: var(--neutral); }
 .badge-lost, .badge-cancelled { background: var(--bg-danger); color: var(--danger); }
 .badge-admin { background: var(--primary-light); color: var(--primary); }
 .badge-manager { background: var(--bg-info); color: var(--info); }

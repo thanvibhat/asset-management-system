@@ -677,35 +677,37 @@
         <div class="child-device-list" *ngIf="linkedDevices.length > 0">
           <div *ngFor="let item of linkedDevices" 
                style="padding: 10px; background: var(--bg-3); border-radius: 6px; border: 1px solid var(--border); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
-            <div style="display: flex; align-items: center; gap: 12px;">
-              <div style="font-size: 20px;">{{ item.isAsset ? '📱' : '⚙️' }}</div>
-              <div>
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <span style="font-size: 13px; font-weight: 600; color: var(--text);">
-                    {{ item.isAsset ? item.name : item.componentType }}
-                  </span>
-                  <span class="badge" [ngClass]="item.isAsset ? 'badge-info' : 'badge-secondary'" style="font-size: 10px;">
-                    {{ item.isAsset ? 'Linked Device' : 'Component' }}
-                  </span>
-                  <button class="btn btn-icon btn-outline-danger" 
-                          (click)="removeLinkedItem(item)" 
-                          [title]="item.isAsset ? 'Unlink Device' : 'Remove Component'"
-                          style="padding: 2px 6px; font-size: 10px; margin-left: 8px;">
-                    <i class="fas" [class.fa-unlink]="item.isAsset" [class.fa-trash-alt]="!item.isAsset"></i>
-                  </button>
-                </div>
-                <div style="font-size: 11px; color: var(--text-3); display: flex; align-items: center; gap: 8px; margin-top: 2px;">
-                  <span>{{ item.isAsset ? 'Tag: ' + item.assetTag : 'SN: ' + (item.serialNumber || '—') }}</span>
+             <div style="display: flex; align-items: center; gap: 12px;">
+               <div style="font-size: 20px;">{{ item.isAsset ? '📱' : '⚙️' }}</div>
+               <div>
+                 <div style="display: flex; align-items: center; gap: 8px;">
+                   <span style="font-size: 13px; font-weight: 600; color: var(--text);">
+                     {{ item.isAsset ? item.name : item.componentType }}
+                   </span>
+                   <span class="badge" [ngClass]="item.isAsset ? 'badge-info' : 'badge-secondary'" style="font-size: 10px;">
+                     {{ item.isAsset ? 'Linked Device' : 'Component' }}
+                   </span>
+                 </div>
+                 <div style="font-size: 11px; color: var(--text-3); margin-top: 2px;">
+                   <span>{{ item.isAsset ? 'Tag: ' + item.assetTag : 'SN: ' + (item.serialNumber || '—') }}</span>
+                 </div>
+               </div>
+             </div>
+             <div style="display: flex; align-items: center; gap: 16px;">
+              <div style="text-align: right;">
+                <span [class]="'badge badge-' + (item.status?.toLowerCase() || 'neutral')" style="font-size: 10px;">
+                  {{ (item.status?.toUpperCase() === 'REPLACED' && item.oldComponentDisposition) ? formatDisposition(item.oldComponentDisposition) : formatStatus(item.status) }}
+                </span>
+                <div style="font-size: 10px; color: var(--text-3); margin-top: 4px;">
+                  {{ (item.isAsset ? (item.serialNumber || '—') : (item.installationDate | date:'dd MMM yyyy')) || '—' }}
                 </div>
               </div>
-            </div>
-            <div style="text-align: right;">
-              <span [class]="'badge badge-' + item.status.toLowerCase()" style="font-size: 10px;">
-                {{ (item.status?.toUpperCase() === 'REPLACED') ? (formatDisposition(item.oldComponentDisposition) || 'Old Part') : formatStatus(item.status) }}
-              </span>
-              <div style="font-size: 10px; color: var(--text-3); margin-top: 4px;">
-                {{ (item.isAsset ? item.serialNumber : item.installationDate | date:'dd MMM yyyy') || '—' }}
-              </div>
+              <button class="btn btn-icon btn-danger" 
+                      (click)="removeLinkedItem(item)" 
+                      [title]="item.isAsset ? 'Unlink Device' : 'Remove Component'"
+                      style="padding: 8px; font-size: 14px; border-radius: 8px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;">
+                <i class="fa-solid" [class.fa-link-slash]="item.isAsset" [class.fa-trash]="!item.isAsset"></i>
+              </button>
             </div>
           </div>
         </div>

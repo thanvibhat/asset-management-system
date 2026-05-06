@@ -485,16 +485,16 @@ export class AssetsComponent implements OnInit {
     if (item.isAsset) {
       this.unlinkDevice(item);
     } else if (item.isComponent) {
-      const originalCombined = [...this.combined];
-      this.combined = this.combined.filter(c => !(c.isComponent && c.id === item.id));
+      const originalDevices = [...this.linkedDevices];
+      this.linkedDevices = this.linkedDevices.filter(c => !(c.isComponent && c.id === item.id));
       
       let isUndone = false;
       this.toast.success(
-        `Removed ${item.componentType}`,
+        `${item.componentType} has been removed`,
         'Undo',
         () => {
           isUndone = true;
-          this.combined = originalCombined;
+          this.linkedDevices = originalDevices;
           this.toast.success('Restored component');
         },
         () => {
@@ -503,7 +503,7 @@ export class AssetsComponent implements OnInit {
               next: () => { console.log(`Permanently removed component ${item.id}`); },
               error: (err) => {
                 this.toast.error(err.error?.message || 'Failed to remove component');
-                this.combined = originalCombined;
+                this.linkedDevices = originalDevices;
               }
             });
           }
@@ -515,8 +515,8 @@ export class AssetsComponent implements OnInit {
   unlinkDevice(device: any): void {
     if (!device.isAsset) return;
     
-    const originalCombined = [...this.combined];
-    this.combined = this.combined.filter(item => !(item.isAsset && item.id === device.id));
+    const originalDevices = [...this.linkedDevices];
+    this.linkedDevices = this.linkedDevices.filter(item => !(item.isAsset && item.id === device.id));
     
     let isUndone = false;
     this.toast.success(
@@ -524,7 +524,7 @@ export class AssetsComponent implements OnInit {
       'Undo',
       () => {
         isUndone = true;
-        this.combined = originalCombined;
+        this.linkedDevices = originalDevices;
         this.toast.success('Restored link');
       },
       () => {
@@ -533,7 +533,7 @@ export class AssetsComponent implements OnInit {
             next: () => { console.log(`Permanently unlinked ${device.assetTag}`); },
             error: (err) => {
               this.toast.error(err.error?.message || 'Failed to unlink device');
-              this.combined = originalCombined;
+              this.linkedDevices = originalDevices;
             }
           });
         }
