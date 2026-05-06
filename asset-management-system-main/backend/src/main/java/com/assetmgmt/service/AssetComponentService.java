@@ -121,4 +121,9 @@ public class AssetComponentService {
 
         return getActiveComponents(assetId);
     }
+
+    @Transactional
+    public void deleteComponent(Long componentId) {
+        componentRepository.deleteById(componentId);
+    }
 }

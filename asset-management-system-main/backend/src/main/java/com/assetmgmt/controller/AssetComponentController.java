@@ -36,4 +36,11 @@ public class AssetComponentController {
             @Valid @RequestBody AssetComponentDto.ReplaceComponentRequest request) {
         return ResponseEntity.ok(assetComponentService.replaceComponent(assetId, request));
     }
+
+    @DeleteMapping("/{componentId}")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
+    public ResponseEntity<Void> deleteComponent(@PathVariable Long assetId, @PathVariable Long componentId) {
+        assetComponentService.deleteComponent(componentId);
+        return ResponseEntity.noContent().build();
+    }
 }

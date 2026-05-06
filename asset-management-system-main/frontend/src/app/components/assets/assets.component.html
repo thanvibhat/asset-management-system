@@ -687,12 +687,11 @@
                   <span class="badge" [ngClass]="item.isAsset ? 'badge-info' : 'badge-secondary'" style="font-size: 10px;">
                     {{ item.isAsset ? 'Linked Device' : 'Component' }}
                   </span>
-                  <button *ngIf="item.isAsset" 
-                          class="btn btn-icon btn-outline-danger" 
-                          (click)="unlinkDevice(item)" 
-                          title="Unlink Device"
+                  <button class="btn btn-icon btn-outline-danger" 
+                          (click)="removeLinkedItem(item)" 
+                          [title]="item.isAsset ? 'Unlink Device' : 'Remove Component'"
                           style="padding: 2px 6px; font-size: 10px; margin-left: 8px;">
-                    <i class="fas fa-unlink"></i> Unlink
+                    <i class="fas" [class.fa-unlink]="item.isAsset" [class.fa-trash-alt]="!item.isAsset"></i>
                   </button>
                 </div>
                 <div style="font-size: 11px; color: var(--text-3); display: flex; align-items: center; gap: 8px; margin-top: 2px;">

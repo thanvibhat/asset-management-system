@@ -481,6 +481,25 @@ export class AssetsComponent implements OnInit {
     });
   }
 
+  removeLinkedItem(item: any): void {
+    if (item.isAsset) {
+      this.unlinkDevice(item);
+    } else if (item.isComponent) {
+      if (confirm(`Are you sure you want to remove this ${item.componentType} component record from the system?`)) {
+        this.http.delete(`/api/assets/${this.linkingAsset.id}/components/${item.id}`).subscribe({
+          next: () => {
+            this.toast.success(`Successfully removed ${item.componentType}`);
+            this.loadLinkingData(this.linkingAsset.id);
+          },
+          error: (err) => {
+            console.error('Error removing component', err);
+            this.toast.error('Failed to remove component');
+          }
+        });
+      }
+    }
+  }
+
   unlinkDevice(device: any): void {
     if (!device.isAsset) return;
     
