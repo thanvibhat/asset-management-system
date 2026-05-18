@@ -83,6 +83,41 @@ public class DataInitializer implements CommandLineRunner {
         upsertPermission("ASSET_CREATE",   "Create new assets");
         upsertPermission("ASSET_UPDATE",   "Update existing assets");
         upsertPermission("ASSET_DELETE",   "Delete assets");
+        upsertPermission("ALLOCATION_MANAGE", "Allocate and manage asset assignments");
+
+        // Ensure ROLE_MANAGER has correct permissions
+        roleRepository.findByName("ROLE_MANAGER").ifPresent(managerRole -> {
+            List<String> managerPerms = List.of("ALLOCATION_MANAGE", "ASSET_CREATE", "ASSET_UPDATE", "REPORT_VIEW", "PRODUCT_MANAGE");
+            boolean updated = false;
+            for (String permName : managerPerms) {
+                Permission p = permissionRepository.findByName(permName).orElseThrow();
+                if (managerRole.getPermissions().stream().noneMatch(existing -> existing.getName().equals(permName))) {
+                    managerRole.getPermissions().add(p);
+                    updated = true;
+                }
+            }
+            if (updated) {
+                roleRepository.save(managerRole);
+                log.info("Synchronized permissions for ROLE_MANAGER");
+            }
+        });
+
+        // Ensure ROLE_VIEWER has correct permissions
+        roleRepository.findByName("ROLE_VIEWER").ifPresent(viewerRole -> {
+            List<String> viewerPerms = List.of("REPORT_VIEW");
+            boolean updated = false;
+            for (String permName : viewerPerms) {
+                Permission p = permissionRepository.findByName(permName).orElseThrow();
+                if (viewerRole.getPermissions().stream().noneMatch(existing -> existing.getName().equals(permName))) {
+                    viewerRole.getPermissions().add(p);
+                    updated = true;
+                }
+            }
+            if (updated) {
+                roleRepository.save(viewerRole);
+                log.info("Synchronized permissions for ROLE_VIEWER");
+            }
+        });
 
         // Seed Analytics Data
         seedAnalyticsData();
@@ -351,23 +386,23 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void upsertPermission(String name, String description) {
-        permissionRepository.findByName(name).ifPresentOrElse(
-            existing -> {},  // already exists, skip
-            () -> {
-                Permission permission = new Permission();
-                permission.setName(name);
-                permission.setDescription(description);
-                permissionRepository.save(permission);
-                log.info("Seeded permission: '{}'", name);
+        Permission permission = permissionRepository.findByName(name).orElseGet(() -> {
+            Permission p = new Permission();
+            p.setName(name);
+            p.setDescription(description);
+            Permission saved = permissionRepository.save(p);
+            log.info("Seeded permission: '{}'", name);
+            return saved;
+        });
 
-                // Assign to ROLE_ADMIN automatically
-                roleRepository.findByName("ROLE_ADMIN").ifPresent(adminRole -> {
-                    adminRole.getPermissions().add(permission);
-                    roleRepository.save(adminRole);
-                    log.info("Assigned permission '{}' to ROLE_ADMIN", name);
-                });
+        // Always ensure assigned to ROLE_ADMIN
+        roleRepository.findByName("ROLE_ADMIN").ifPresent(adminRole -> {
+            if (adminRole.getPermissions().stream().noneMatch(existing -> existing.getName().equals(name))) {
+                adminRole.getPermissions().add(permission);
+                roleRepository.save(adminRole);
+                log.info("Assigned permission '{}' to ROLE_ADMIN", name);
             }
-        );
+        });
     }
 
     private void upsertUser(String username, String email, String fullName, String roleName) {

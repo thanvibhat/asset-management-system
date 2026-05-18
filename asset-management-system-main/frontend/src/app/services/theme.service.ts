@@ -6,7 +6,7 @@ export type Theme = 'light' | 'dark';
   providedIn: 'root'
 })
 export class ThemeService {
-  private readonly THEME_KEY = 'assettrack-theme';
+  private readonly THEME_KEY = 'assetiq-theme';
   
   // Use Angular Signals for reactive state
   public theme = signal<Theme>('light');
