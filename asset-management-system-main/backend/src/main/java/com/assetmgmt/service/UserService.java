@@ -24,15 +24,36 @@ public class UserService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthService authService;
+    private final com.assetmgmt.repository.AllocationRepository allocationRepository;
+    private final com.assetmgmt.repository.AssetRepository assetRepository;
+    private final com.assetmgmt.repository.MaintenanceRepository maintenanceRepository;
+    private final com.assetmgmt.repository.ProcurementRepository procurementRepository;
+    private final com.assetmgmt.repository.DocumentRepository documentRepository;
+    private final com.assetmgmt.repository.NotificationRepository notificationRepository;
+    private final EmailService emailService;
 
     public UserService(UserRepository userRepository, 
                        RoleRepository roleRepository, 
                        PasswordEncoder passwordEncoder,
-                       AuthService authService) {
+                       AuthService authService,
+                       com.assetmgmt.repository.AllocationRepository allocationRepository,
+                       com.assetmgmt.repository.AssetRepository assetRepository,
+                       com.assetmgmt.repository.MaintenanceRepository maintenanceRepository,
+                       com.assetmgmt.repository.ProcurementRepository procurementRepository,
+                       com.assetmgmt.repository.DocumentRepository documentRepository,
+                       com.assetmgmt.repository.NotificationRepository notificationRepository,
+                       EmailService emailService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.authService = authService;
+        this.allocationRepository = allocationRepository;
+        this.assetRepository = assetRepository;
+        this.maintenanceRepository = maintenanceRepository;
+        this.procurementRepository = procurementRepository;
+        this.documentRepository = documentRepository;
+        this.notificationRepository = notificationRepository;
+        this.emailService = emailService;
     }
 
     public Page<AuthDto.UserDto> getAllUsers(Pageable pageable) {
@@ -90,12 +111,38 @@ public class UserService {
         return AuthDto.UserDto.fromUser(userRepository.save(user));
     }
 
+    @Transactional
     public void deleteUser(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User", id));
+
+        // Check if user is associated with any transaction/activity:
+        if (allocationRepository.existsByUserId(id) || allocationRepository.existsByAllocatedById(id)) {
+            throw new BusinessException("Cannot delete user as they have associated allocations. You can deactivate them instead.");
+        }
+
+        if (assetRepository.existsByCreatedById(id)) {
+            throw new BusinessException("Cannot delete user as they have created assets. You can deactivate them instead.");
+        }
+
+        if (maintenanceRepository.existsByCreatedById(id)) {
+            throw new BusinessException("Cannot delete user as they have created maintenance records. You can deactivate them instead.");
+        }
+
+        if (procurementRepository.existsByCreatedById(id)) {
+            throw new BusinessException("Cannot delete user as they have created procurements. You can deactivate them instead.");
+        }
+
+        if (documentRepository.existsByUploadedById(id)) {
+            throw new BusinessException("Cannot delete user as they have uploaded documents. You can deactivate them instead.");
+        }
+
+        // Safe to delete. First clear notifications.
+        notificationRepository.deleteByUserId(id);
         userRepository.delete(user);
     }
 
+    @Transactional
     public void toggleUserStatus(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User", id));
@@ -113,5 +160,46 @@ public class UserService {
             }
         }
         return createdUsers;
+    }
+
+    @Transactional
+    public void resetPassword(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User", id));
+
+        String newPassword = generateRandomPassword();
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setPasswordResetRequired(true);
+        userRepository.save(user);
+
+        emailService.sendPasswordResetEmail(user.getEmail(), "http://localhost:4200/login", user.getUsername(), newPassword);
+    }
+
+    @Transactional
+    public AuthDto.UserDto changePassword(String username, AuthDto.ChangePasswordRequest request) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new BusinessException("User not found"));
+
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+            throw new BusinessException("Incorrect current password");
+        }
+
+        if (!request.getNewPassword().equals(request.getConfirmNewPassword())) {
+            throw new BusinessException("New password and confirmation do not match");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setPasswordResetRequired(false);
+        return AuthDto.UserDto.fromUser(userRepository.save(user));
+    }
+
+    private String generateRandomPassword() {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+        java.security.SecureRandom random = new java.security.SecureRandom();
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 10; i++) {
+            sb.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return sb.toString();
     }
 }

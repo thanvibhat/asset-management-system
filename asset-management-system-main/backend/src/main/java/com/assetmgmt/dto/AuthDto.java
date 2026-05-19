@@ -27,6 +27,7 @@ public class AuthDto {
         private String fullName;
         private java.util.List<String> roles;
         private java.util.List<String> permissions;
+        private boolean passwordResetRequired;
     }
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
@@ -39,6 +40,7 @@ public class AuthDto {
         private String employeeId;
         private java.util.List<String> roles;
         private boolean enabled;
+        private boolean passwordResetRequired;
 
         public static UserDto fromUser(User user) {
             return UserDto.builder()
@@ -50,6 +52,7 @@ public class AuthDto {
                     .employeeId(user.getEmployeeId())
                     .roles(user.getRoles().stream().map(com.assetmgmt.entity.Role::getName).collect(java.util.stream.Collectors.toList()))
                     .enabled(user.isEnabled())
+                    .passwordResetRequired(user.isPasswordResetRequired())
                     .build();
         }
     }
@@ -60,8 +63,6 @@ public class AuthDto {
         @Size(min = 3, max = 50, message = "Username must be 3-50 characters")
         private String username;
 
-        @NotBlank(message = "Password is required")
-        @Size(min = 6, message = "Password must be at least 6 characters")
         private String password;
 
         @NotBlank(message = "Email is required")
@@ -86,5 +87,18 @@ public class AuthDto {
         private String employeeId;
         private String role;
         private Boolean enabled;
+    }
+
+    @Getter @Setter @NoArgsConstructor @AllArgsConstructor
+    public static class ChangePasswordRequest {
+        @NotBlank(message = "Old password is required")
+        private String oldPassword;
+
+        @NotBlank(message = "New password is required")
+        @Size(min = 6, message = "New password must be at least 6 characters")
+        private String newPassword;
+
+        @NotBlank(message = "Confirm new password is required")
+        private String confirmNewPassword;
     }
 }

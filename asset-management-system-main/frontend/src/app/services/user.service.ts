@@ -31,6 +31,10 @@ export class UserService {
   }
 
   create(data: any): Observable<User> {
-    return this.http.post<User>('/api/auth/users', data);
+    return this.http.post<User>(this.API, data);
+  }
+
+  resetPassword(id: number): Observable<void> {
+    return this.http.post<void>(`${this.API}/${id}/reset-password`, {});
   }
 }

@@ -169,4 +169,80 @@ public class ReportService {
         }
         return csv.toString().getBytes();
     }
+
+    public List<com.assetmgmt.dto.DepreciationReportItemDto> getDepreciationReport(
+            LocalDate targetDate, Long categoryId, String location) {
+        LocalDate queryDate = targetDate != null ? targetDate : LocalDate.now();
+        List<Asset> assets = assetRepository.findAll();
+        
+        return assets.stream()
+                .filter(a -> a.getPurchaseDate() != null && !a.getPurchaseDate().isAfter(queryDate))
+                .filter(a -> a.getStatus() != Asset.AssetStatus.DISPOSED || (a.getDisposalDate() != null && a.getDisposalDate().isAfter(queryDate)))
+                .filter(a -> categoryId == null || (a.getCategory() != null && a.getCategory().getId().equals(categoryId)))
+                .filter(a -> location == null || location.trim().isEmpty() || 
+                             (a.getLocation() != null && a.getLocation().toLowerCase().contains(location.trim().toLowerCase())))
+                .map(a -> {
+                    BigDecimal rate = a.getDepreciationRate() != null ? a.getDepreciationRate() : BigDecimal.ZERO;
+                    BigDecimal depreciatedVal = calculateDepreciatedValue(a.getPurchaseCost(), a.getPurchaseDate(), rate, queryDate);
+                    long age = ChronoUnit.DAYS.between(a.getPurchaseDate(), queryDate);
+                    return com.assetmgmt.dto.DepreciationReportItemDto.builder()
+                            .id(a.getId())
+                            .assetTag(a.getAssetTag())
+                            .name(a.getName())
+                            .categoryName(a.getCategory() != null ? a.getCategory().getName() : "Unassigned")
+                            .location(a.getLocation())
+                            .purchaseDate(a.getPurchaseDate())
+                            .purchaseCost(a.getPurchaseCost() != null ? a.getPurchaseCost() : BigDecimal.ZERO)
+                            .depreciationRate(rate)
+                            .depreciatedValue(depreciatedVal)
+                            .ageInDays(age)
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
+    public List<com.assetmgmt.dto.DisposalReportItemDto> getDisposalReport(LocalDate fromDate, LocalDate toDate) {
+        List<Asset> assets = assetRepository.findAll();
+        
+        return assets.stream()
+                .filter(a -> a.getStatus() == Asset.AssetStatus.DISPOSED)
+                .filter(a -> a.getDisposalDate() != null)
+                .filter(a -> fromDate == null || !a.getDisposalDate().isBefore(fromDate))
+                .filter(a -> toDate == null || !a.getDisposalDate().isAfter(toDate))
+                .map(a -> {
+                    BigDecimal rate = a.getDepreciationRate() != null ? a.getDepreciationRate() : BigDecimal.ZERO;
+                    BigDecimal depreciatedVal = calculateDepreciatedValue(a.getPurchaseCost(), a.getPurchaseDate(), rate, a.getDisposalDate());
+                    return com.assetmgmt.dto.DisposalReportItemDto.builder()
+                            .id(a.getId())
+                            .assetTag(a.getAssetTag())
+                            .name(a.getName())
+                            .categoryName(a.getCategory() != null ? a.getCategory().getName() : "Unassigned")
+                            .location(a.getLocation())
+                            .purchaseDate(a.getPurchaseDate())
+                            .purchaseCost(a.getPurchaseCost() != null ? a.getPurchaseCost() : BigDecimal.ZERO)
+                            .disposalDate(a.getDisposalDate())
+                            .depreciationRate(rate)
+                            .depreciatedValueAtDisposal(depreciatedVal)
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
+    public BigDecimal calculateDepreciatedValue(BigDecimal purchaseCost, LocalDate purchaseDate, BigDecimal rate, LocalDate targetDate) {
+        if (purchaseCost == null) return BigDecimal.ZERO;
+        if (purchaseDate == null || targetDate == null || targetDate.isBefore(purchaseDate)) return purchaseCost;
+        if (rate == null || rate.compareTo(BigDecimal.ZERO) <= 0) return purchaseCost;
+        
+        long days = ChronoUnit.DAYS.between(purchaseDate, targetDate);
+        if (days <= 0) return purchaseCost;
+        
+        BigDecimal dailyRate = rate.divide(BigDecimal.valueOf(100.0 * 365.0), 10, java.math.RoundingMode.HALF_UP);
+        BigDecimal depreciationAmt = purchaseCost.multiply(dailyRate).multiply(BigDecimal.valueOf(days));
+        BigDecimal value = purchaseCost.subtract(depreciationAmt);
+        
+        if (value.compareTo(BigDecimal.ZERO) < 0) {
+            return BigDecimal.ZERO.setScale(2, java.math.RoundingMode.HALF_UP);
+        }
+        return value.setScale(2, java.math.RoundingMode.HALF_UP);
+    }
 }

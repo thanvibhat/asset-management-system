@@ -49,6 +49,7 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/users/change-password").authenticated()
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/assets/**").hasAnyRole("ADMIN", "MANAGER", "VIEWER")
                 .requestMatchers(HttpMethod.GET, "/api/allocations/**").hasAnyRole("ADMIN", "MANAGER", "VIEWER")

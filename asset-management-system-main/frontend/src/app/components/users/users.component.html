@@ -69,6 +69,13 @@
                     <circle [attr.cx]="user.enabled ? 16 : 8" cy="12" r="3"></circle>
                   </svg>
                 </button>
+                <button class="btn-icon text-primary" (click)="resetPassword(user)" title="Reset Password">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0110 0v4"></path>
+                    <circle cx="12" cy="16" r="1"></circle>
+                  </svg>
+                </button>
                 <div class="delete-action" style="display: inline-block;">
                   <button *ngIf="deleteConfirmId !== user.id" class="btn-icon text-danger" (click)="confirmDelete(user.id)" title="Delete User">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -128,8 +135,11 @@
 
         <div class="form-row" *ngIf="!editMode">
           <div class="form-group col">
-            <label class="form-label">Password*</label>
-            <input type="password" class="form-control" name="password" [(ngModel)]="form.password" [required]="!editMode" placeholder="Enter temporary password">
+            <label class="form-label">Password</label>
+            <input type="password" class="form-control" name="password" [(ngModel)]="form.password" placeholder="Leave blank to auto-generate & email">
+            <small style="color: var(--text-3); font-size: 11px; margin-top: 4px; display: block;">
+              If left blank, a secure temporary password will be generated and emailed to the user.
+            </small>
           </div>
         </div>
 

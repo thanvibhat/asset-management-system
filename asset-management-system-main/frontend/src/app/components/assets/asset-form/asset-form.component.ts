@@ -66,7 +66,7 @@ export class AssetFormComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
-  statuses = ['AVAILABLE', 'ALLOCATED', 'UNDER_MAINTENANCE', 'DAMAGED', 'RETIRED', 'LOST'];
+  statuses = ['AVAILABLE', 'ALLOCATED', 'UNDER_MAINTENANCE', 'DAMAGED', 'RETIRED', 'LOST', 'DISPOSED'];
 
   constructor(
     private fb: FormBuilder,
@@ -90,6 +90,8 @@ export class AssetFormComponent implements OnInit, OnDestroy {
       vendorId: [null, Validators.required],
       warrantyMonths: [null],
       parentId: [null],
+      depreciationRate: [0],
+      disposalDate: [null],
       dynamicAttributes: this.fb.group({})
     });
   }

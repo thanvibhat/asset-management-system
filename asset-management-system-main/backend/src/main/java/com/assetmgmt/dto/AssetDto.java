@@ -36,6 +36,8 @@ public class AssetDto {
         private LocalDateTime createdAt;
         private Long parentId;
         private String parentTag;
+        private BigDecimal depreciationRate;
+        private LocalDate disposalDate;
         
         // Current Allocation Info
         private Long currentAllocationId;
@@ -71,6 +73,8 @@ public class AssetDto {
                     .warrantyExpiryDate(a.getWarrantyExpiryDate())
                     .parentId(a.getParentAsset() != null ? a.getParentAsset().getId() : null)
                     .parentTag(a.getParentAsset() != null ? a.getParentAsset().getAssetTag() : null)
+                    .depreciationRate(a.getDepreciationRate())
+                    .disposalDate(a.getDisposalDate())
                     .build();
         }
     }
@@ -104,6 +108,8 @@ public class AssetDto {
         private Long vendorId;
         private String dynamicAttributes;
         private Long parentId;
+        private BigDecimal depreciationRate;
+        private LocalDate disposalDate;
     }
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder

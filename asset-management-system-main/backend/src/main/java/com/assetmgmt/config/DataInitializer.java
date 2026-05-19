@@ -33,6 +33,7 @@ public class DataInitializer implements CommandLineRunner {
     private final MaintenanceRepository maintenanceRepository;
     private final AuditLogRepository auditLogRepository;
     private final NotificationScheduler notificationScheduler;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
  
     public DataInitializer(UserRepository userRepository, 
                            RoleRepository roleRepository, 
@@ -47,7 +48,8 @@ public class DataInitializer implements CommandLineRunner {
                            ProcurementRepository procurementRepository,
                            MaintenanceRepository maintenanceRepository,
                            AuditLogRepository auditLogRepository,
-                           NotificationScheduler notificationScheduler) {
+                           NotificationScheduler notificationScheduler,
+                           org.springframework.jdbc.core.JdbcTemplate jdbcTemplate) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.permissionRepository = permissionRepository;
@@ -62,10 +64,26 @@ public class DataInitializer implements CommandLineRunner {
         this.maintenanceRepository = maintenanceRepository;
         this.auditLogRepository = auditLogRepository;
         this.notificationScheduler = notificationScheduler;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @Override
     public void run(String... args) {
+        try {
+            jdbcTemplate.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_required BOOLEAN DEFAULT FALSE;");
+            log.info("Programmatically verified/added password_reset_required column to users table.");
+        } catch (Exception e) {
+            log.warn("JDBC column initialization warning for users: {}", e.getMessage());
+        }
+        try {
+            jdbcTemplate.execute("ALTER TABLE assets ADD COLUMN IF NOT EXISTS depreciation_rate NUMERIC(5, 2) DEFAULT 0.00;");
+            jdbcTemplate.execute("ALTER TABLE assets ADD COLUMN IF NOT EXISTS disposal_date DATE;");
+            jdbcTemplate.execute("ALTER TABLE assets DROP CONSTRAINT IF EXISTS assets_status_check;");
+            jdbcTemplate.execute("ALTER TABLE assets ADD CONSTRAINT assets_status_check CHECK (status IN ('AVAILABLE','ALLOCATED','UNDER_MAINTENANCE','DAMAGED','LOST','RETIRED','DISPOSED'));");
+            log.info("Programmatically verified/added depreciation_rate, disposal_date, and updated status constraint on assets table.");
+        } catch (Exception e) {
+            log.warn("JDBC column initialization warning for assets: {}", e.getMessage());
+        }
         // Seed roles first
         seedRoles();
 

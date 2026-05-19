@@ -67,5 +67,8 @@ public interface MaintenanceRepository extends JpaRepository<MaintenanceRecord, 
     List<Object[]> getCorrectiveDatesPerAsset();
 
     @Query("SELECT a.id, m.completedDate FROM MaintenanceRecord m JOIN m.asset a WHERE m.status = 'COMPLETED' AND m.maintenanceType = 'CORRECTIVE' AND m.completedDate IS NOT NULL AND m.completedDate >= :fromDate AND m.completedDate <= :toDate ORDER BY a.id, m.completedDate")
-    List<Object[]> getCorrectiveDatesPerAssetBetween(LocalDate fromDate, LocalDate toDate);
+    List<Object[]> getCorrectiveDatesPerAssetBetween(@org.springframework.data.repository.query.Param("fromDate") LocalDate fromDate, @org.springframework.data.repository.query.Param("toDate") LocalDate toDate);
+
+    @Query("SELECT COUNT(m) > 0 FROM MaintenanceRecord m WHERE m.createdBy.id = :userId")
+    boolean existsByCreatedById(@org.springframework.data.repository.query.Param("userId") Long userId);
 }

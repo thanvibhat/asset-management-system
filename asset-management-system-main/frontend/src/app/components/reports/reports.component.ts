@@ -32,9 +32,20 @@ export class ReportsComponent implements OnInit {
   filterCategoryId: number | null = null;
   loading = true;
   filteringMetrics = false;
-  activeWorkspaceTab: 'inventory' | 'spend' | 'performance' = 'inventory';
+  activeWorkspaceTab: 'inventory' | 'spend' | 'performance' | 'depreciation' = 'inventory';
   allAssets: Asset[] = [];
   warrantyFilter: 'all' | 'active' | 'expired' = 'all';
+
+  depreciationDate = new Date().toISOString().substring(0, 10);
+  depreciationCategoryId: number | null = null;
+  depreciationLocation = '';
+  depreciationAssets: any[] = [];
+  loadingDepreciation = false;
+
+  disposalFromDate = new Date(new Date().getFullYear(), 0, 1).toISOString().substring(0, 10);
+  disposalToDate = new Date().toISOString().substring(0, 10);
+  disposedAssets: any[] = [];
+  loadingDisposals = false;
 
   constructor(
     private dashboardService: DashboardService,
@@ -43,8 +54,12 @@ export class ReportsComponent implements OnInit {
     private router: Router
   ) {}
 
-  setWorkspaceTab(tab: 'inventory' | 'spend' | 'performance'): void {
+  setWorkspaceTab(tab: 'inventory' | 'spend' | 'performance' | 'depreciation'): void {
     this.activeWorkspaceTab = tab;
+    if (tab === 'depreciation') {
+      this.loadDepreciationReport();
+      this.loadDisposalReport();
+    }
   }
 
   ngOnInit(): void {
@@ -536,5 +551,56 @@ export class ReportsComponent implements OnInit {
 
   getEntries(obj: { [key: string]: number } | undefined): [string, number][] {
     return obj ? Object.entries(obj) : [];
+  }
+
+  loadDepreciationReport(): void {
+    this.loadingDepreciation = true;
+    this.reportService.getDepreciationReport(
+      this.depreciationDate,
+      this.depreciationCategoryId || undefined,
+      this.depreciationLocation || undefined
+    ).subscribe({
+      next: (data) => {
+        this.depreciationAssets = data || [];
+        this.loadingDepreciation = false;
+      },
+      error: () => {
+        this.depreciationAssets = [];
+        this.loadingDepreciation = false;
+      }
+    });
+  }
+
+  loadDisposalReport(): void {
+    this.loadingDisposals = true;
+    this.reportService.getDisposalReport(
+      this.disposalFromDate || undefined,
+      this.disposalToDate || undefined
+    ).subscribe({
+      next: (data) => {
+        this.disposedAssets = data || [];
+        this.loadingDisposals = false;
+      },
+      error: () => {
+        this.disposedAssets = [];
+        this.loadingDisposals = false;
+      }
+    });
+  }
+
+  getDepreciationTotalCost(): number {
+    return this.depreciationAssets.reduce((sum, item) => sum + (item.purchaseCost || 0), 0);
+  }
+
+  getDepreciationTotalValue(): number {
+    return this.depreciationAssets.reduce((sum, item) => sum + (item.depreciatedValue || 0), 0);
+  }
+
+  getDisposalTotalCost(): number {
+    return this.disposedAssets.reduce((sum, item) => sum + (item.purchaseCost || 0), 0);
+  }
+
+  getDisposalTotalValue(): number {
+    return this.disposedAssets.reduce((sum, item) => sum + (item.depreciatedValueAtDisposal || 0), 0);
   }
 }

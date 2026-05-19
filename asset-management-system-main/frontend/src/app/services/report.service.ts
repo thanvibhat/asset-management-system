@@ -71,4 +71,19 @@ export class ReportService {
     const params = this.buildParams(fromDate, toDate, categoryId);
     return this.http.get('/api/reports/poor-value-assets', { params });
   }
+
+  getDepreciationReport(targetDate?: string, categoryId?: number, location?: string): Observable<any> {
+    let params = new HttpParams();
+    if (targetDate) params = params.set('targetDate', targetDate);
+    if (categoryId) params = params.set('categoryId', categoryId.toString());
+    if (location) params = params.set('location', location);
+    return this.http.get('/api/reports/depreciation', { params });
+  }
+
+  getDisposalReport(fromDate?: string, toDate?: string): Observable<any> {
+    let params = new HttpParams();
+    if (fromDate) params = params.set('fromDate', fromDate);
+    if (toDate) params = params.set('toDate', toDate);
+    return this.http.get('/api/reports/disposals', { params });
+  }
 }

@@ -36,6 +36,13 @@
         </svg>
         <span>Asset Performance & Rankings</span>
       </button>
+      <button class="workspace-tab" [class.active]="activeWorkspaceTab === 'depreciation'" (click)="setWorkspaceTab('depreciation')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="1" x2="12" y2="23"></line>
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+        </svg>
+        <span>Depreciation & Disposals</span>
+      </button>
     </div>
 
     <!-- Tab 1: Inventory Workspace -->
@@ -714,6 +721,164 @@
                 </svg>
               </button>
             </div>
+          </div>
+        </section>
+      </div>
+    </ng-container>
+
+    <!-- Tab 4: Depreciation & Disposals Workspace -->
+    <ng-container *ngIf="activeWorkspaceTab === 'depreciation'">
+      <div class="grid-2">
+        <!-- Section 1: Value of Assets as on a Given Date -->
+        <section class="report-section">
+          <div class="card-header-row">
+            <div class="section-title-group">
+              <h2 class="section-title">Asset Values & Depreciation</h2>
+              <span class="section-subtitle">Calculated depreciated value as of a given date</span>
+            </div>
+          </div>
+          
+          <!-- Filters Card -->
+          <div class="card filter-card mb-3" style="padding: 12px; margin-bottom: 12px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+              <div class="form-group mb-0">
+                <label class="form-label" style="font-size: 11px;">Target Date</label>
+                <input class="form-control form-control-sm" type="date" [(ngModel)]="depreciationDate" (change)="loadDepreciationReport()">
+              </div>
+              <div class="form-group mb-0">
+                <label class="form-label" style="font-size: 11px;">Category</label>
+                <select class="form-control form-control-sm" [(ngModel)]="depreciationCategoryId" (change)="loadDepreciationReport()">
+                  <option [value]="null">All Categories</option>
+                  <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
+                </select>
+              </div>
+              <div class="form-group mb-0">
+                <label class="form-label" style="font-size: 11px;">Location</label>
+                <input class="form-control form-control-sm" type="text" [(ngModel)]="depreciationLocation" (input)="loadDepreciationReport()" placeholder="Search location...">
+              </div>
+            </div>
+          </div>
+
+          <!-- Total Summary Cards -->
+          <div class="stat-cards mini-stat-cards mb-3" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+            <div class="stat-card" style="padding: 10px;">
+              <span class="stat-label" style="font-size: 10px;">Total Cost</span>
+              <span class="stat-value text-1" style="font-size: 16px;">₹{{ getDepreciationTotalCost() | number:'1.2-2' }}</span>
+            </div>
+            <div class="stat-card" style="padding: 10px;">
+              <span class="stat-label" style="font-size: 10px;">Depreciated Value</span>
+              <span class="stat-value text-success" style="font-size: 16px;">₹{{ getDepreciationTotalValue() | number:'1.2-2' }}</span>
+            </div>
+            <div class="stat-card" style="padding: 10px;">
+              <span class="stat-label" style="font-size: 10px;">Total Depr.</span>
+              <span class="stat-value text-danger" style="font-size: 16px;">₹{{ (getDepreciationTotalCost() - getDepreciationTotalValue()) | number:'1.2-2' }}</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div *ngIf="loadingDepreciation" class="text-center py-4">
+              <div class="spinner"></div>
+              <p class="text-3 mt-2">Loading values...</p>
+            </div>
+            <div *ngIf="!loadingDepreciation && depreciationAssets.length === 0" class="text-center py-4 text-muted">
+              No matching assets found for this date.
+            </div>
+            <table class="table" *ngIf="!loadingDepreciation && depreciationAssets.length > 0">
+              <thead>
+                <tr>
+                  <th>Asset</th>
+                  <th>Location</th>
+                  <th class="text-right">Purchase Cost</th>
+                  <th class="text-right">Rate</th>
+                  <th class="text-right">Depr. Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of depreciationAssets">
+                  <td>
+                    <div class="font-weight-600">{{ item.name }}</div>
+                    <div class="text-3 text-muted">{{ item.assetTag }} &bull; {{ item.categoryName }}</div>
+                  </td>
+                  <td>{{ item.location || 'N/A' }}</td>
+                  <td class="text-right">₹{{ item.purchaseCost | number:'1.2-2' }}</td>
+                  <td class="text-right">{{ item.depreciationRate }}%</td>
+                  <td class="text-right text-success font-weight-600">₹{{ item.depreciatedValue | number:'1.2-2' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Section 2: Disposed Assets Report -->
+        <section class="report-section">
+          <div class="card-header-row">
+            <div class="section-title-group">
+              <h2 class="section-title">Disposed Assets</h2>
+              <span class="section-subtitle">Assets disposed of during the selected time period</span>
+            </div>
+          </div>
+
+          <!-- Filters Card -->
+          <div class="card filter-card mb-3" style="padding: 12px; margin-bottom: 12px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <div class="form-group mb-0">
+                <label class="form-label" style="font-size: 11px;">From Date</label>
+                <input class="form-control form-control-sm" type="date" [(ngModel)]="disposalFromDate" (change)="loadDisposalReport()">
+              </div>
+              <div class="form-group mb-0">
+                <label class="form-label" style="font-size: 11px;">To Date</label>
+                <input class="form-control form-control-sm" type="date" [(ngModel)]="disposalToDate" (change)="loadDisposalReport()">
+              </div>
+            </div>
+          </div>
+
+          <!-- Total Summary Cards -->
+          <div class="stat-cards mini-stat-cards mb-3" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+            <div class="stat-card" style="padding: 10px;">
+              <span class="stat-label" style="font-size: 10px;">Disposed Count</span>
+              <span class="stat-value text-1" style="font-size: 16px;">{{ disposedAssets.length }}</span>
+            </div>
+            <div class="stat-card" style="padding: 10px;">
+              <span class="stat-label" style="font-size: 10px;">Original Cost</span>
+              <span class="stat-value text-coral" style="font-size: 16px;">₹{{ getDisposalTotalCost() | number:'1.2-2' }}</span>
+            </div>
+            <div class="stat-card" style="padding: 10px;">
+              <span class="stat-label" style="font-size: 10px;">Depr. Value</span>
+              <span class="stat-value text-warning" style="font-size: 16px;">₹{{ getDisposalTotalValue() | number:'1.2-2' }}</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div *ngIf="loadingDisposals" class="text-center py-4">
+              <div class="spinner"></div>
+              <p class="text-3 mt-2">Loading disposals...</p>
+            </div>
+            <div *ngIf="!loadingDisposals && disposedAssets.length === 0" class="text-center py-4 text-muted">
+              No assets were disposed of during this period.
+            </div>
+            <table class="table" *ngIf="!loadingDisposals && disposedAssets.length > 0">
+              <thead>
+                <tr>
+                  <th>Asset</th>
+                  <th>Disposal Date</th>
+                  <th class="text-right">Purchase Cost</th>
+                  <th class="text-right">Rate</th>
+                  <th class="text-right">Depr. Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of disposedAssets">
+                  <td>
+                    <div class="font-weight-600">{{ item.name }}</div>
+                    <div class="text-3 text-muted">{{ item.assetTag }} &bull; {{ item.categoryName }}</div>
+                  </td>
+                  <td>{{ item.disposalDate | date:'dd MMM yyyy' }}</td>
+                  <td class="text-right">₹{{ item.purchaseCost | number:'1.2-2' }}</td>
+                  <td class="text-right">{{ item.depreciationRate }}%</td>
+                  <td class="text-right text-warning font-weight-600">₹{{ item.depreciatedValueAtDisposal | number:'1.2-2' }}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </section>
       </div>

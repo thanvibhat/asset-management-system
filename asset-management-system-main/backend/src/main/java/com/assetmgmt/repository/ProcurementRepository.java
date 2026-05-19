@@ -22,4 +22,7 @@ public interface ProcurementRepository extends JpaRepository<Procurement, Long> 
 
     @Query("SELECT SUM(p.quantity) FROM Procurement p")
     Long getTotalQuantity();
+
+    @Query("SELECT COUNT(p) > 0 FROM Procurement p WHERE p.createdBy.id = :userId")
+    boolean existsByCreatedById(@org.springframework.data.repository.query.Param("userId") Long userId);
 }

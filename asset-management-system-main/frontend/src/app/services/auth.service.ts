@@ -51,6 +51,19 @@ export class AuthService {
 
   createUser(data: any): Observable<User> { return this.http.post<User>(`${this.API}/users`, data); }
 
+  changePassword(data: any): Observable<any> {
+    return this.http.post<any>(`/api/users/change-password`, data);
+  }
+
+  updateCurrentUserPasswordResetFlag(flag: boolean): void {
+    const user = this.currentUser;
+    if (user) {
+      user.passwordResetRequired = flag;
+      localStorage.setItem(this.USER_KEY, JSON.stringify(user));
+      this.currentUserSubject.next(user);
+    }
+  }
+
   private loadUser(): LoginResponse | null {
     const json = localStorage.getItem(this.USER_KEY);
     return json ? JSON.parse(json) : null;

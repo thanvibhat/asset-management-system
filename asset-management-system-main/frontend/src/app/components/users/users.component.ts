@@ -103,6 +103,14 @@ export class UsersComponent implements OnInit {
     });
   }
 
+  resetPassword(user: User): void {
+    if (!confirm(`Are you sure you want to reset the password for ${user.fullName}?`)) return;
+    this.userService.resetPassword(user.id).subscribe({
+      next: () => alert(`Password for ${user.fullName} has been successfully reset. A mock email has been logged to /backend/sent_emails.log.`),
+      error: err => alert(err.error?.message || 'Error resetting password')
+    });
+  }
+
   confirmDelete(id: number): void {
     this.deleteConfirmId = id;
   }

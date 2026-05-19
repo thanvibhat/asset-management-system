@@ -7,6 +7,7 @@ export interface User {
   enabled: boolean;
   department?: string;
   employeeId?: string;
+  passwordResetRequired?: boolean;
 }
 
 export interface LoginResponse {
@@ -18,6 +19,7 @@ export interface LoginResponse {
   fullName: string;
   roles: string[];
   permissions: string[];
+  passwordResetRequired?: boolean;
 }
 
 export interface Notification {
@@ -66,9 +68,11 @@ export interface Asset {
   warrantyExpiryDate?: string;
   parentId?: number;
   parentTag?: string;
+  depreciationRate?: number;
+  disposalDate?: string;
 }
 
-export type AssetStatus = 'AVAILABLE' | 'ALLOCATED' | 'UNDER_MAINTENANCE' | 'DAMAGED' | 'LOST' | 'RETIRED';
+export type AssetStatus = 'AVAILABLE' | 'ALLOCATED' | 'UNDER_MAINTENANCE' | 'DAMAGED' | 'LOST' | 'RETIRED' | 'DISPOSED';
 
 export interface AssetCategory {
   id: number;

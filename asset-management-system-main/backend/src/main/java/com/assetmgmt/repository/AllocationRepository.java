@@ -17,4 +17,10 @@ public interface AllocationRepository extends JpaRepository<Allocation, Long> {
     Optional<Allocation> findFirstByAssetIdAndStatusOrderByAllocatedAtDesc(Long assetId, Allocation.AllocationStatus status);
     boolean existsByAssetIdAndStatus(Long assetId, Allocation.AllocationStatus status);
     long countByStatus(Allocation.AllocationStatus status);
+
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(a) > 0 FROM Allocation a WHERE a.user.id = :userId")
+    boolean existsByUserId(@org.springframework.data.repository.query.Param("userId") Long userId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(a) > 0 FROM Allocation a WHERE a.allocatedBy.id = :allocatedById")
+    boolean existsByAllocatedById(@org.springframework.data.repository.query.Param("allocatedById") Long allocatedById);
 }

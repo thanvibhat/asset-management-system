@@ -43,6 +43,12 @@ public class Asset {
     @Column(name = "current_value", precision = 12, scale = 2)
     private BigDecimal currentValue;
 
+    @Column(name = "depreciation_rate", precision = 5, scale = 2)
+    private BigDecimal depreciationRate;
+
+    @Column(name = "disposal_date")
+    private LocalDate disposalDate;
+
     @Column(length = 200)
     private String location;
 
@@ -123,6 +129,6 @@ public class Asset {
     }
 
     public enum AssetStatus {
-        AVAILABLE, ALLOCATED, UNDER_MAINTENANCE, DAMAGED, LOST, RETIRED
+        AVAILABLE, ALLOCATED, UNDER_MAINTENANCE, DAMAGED, LOST, RETIRED, DISPOSED
     }
 }

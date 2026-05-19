@@ -147,4 +147,19 @@ public class ReportController {
     public ResponseEntity<byte[]> exportPoorValueAssets() {
         return csvResponse(reportService.exportPoorValueAssetsReport(), "poor_value_report.csv");
     }
+
+    @GetMapping("/depreciation")
+    public ResponseEntity<List<com.assetmgmt.dto.DepreciationReportItemDto>> getDepreciationReport(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate targetDate,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) String location) {
+        return ResponseEntity.ok(reportService.getDepreciationReport(targetDate, categoryId, location));
+    }
+
+    @GetMapping("/disposals")
+    public ResponseEntity<List<com.assetmgmt.dto.DisposalReportItemDto>> getDisposalReport(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate) {
+        return ResponseEntity.ok(reportService.getDisposalReport(fromDate, toDate));
+    }
 }

@@ -119,6 +119,12 @@ public class AssetService {
                 ? assetRepository.findById(request.getParentId()).orElseThrow(() -> new ResourceNotFoundException("Parent Asset", request.getParentId()))
                 : null;
 
+        java.time.LocalDate requestDisposalDate = request.getDisposalDate();
+        Asset.AssetStatus assetStatus = request.getStatus() != null ? Asset.AssetStatus.valueOf(request.getStatus()) : Asset.AssetStatus.AVAILABLE;
+        if (assetStatus == Asset.AssetStatus.DISPOSED && requestDisposalDate == null) {
+            requestDisposalDate = java.time.LocalDate.now();
+        }
+
         User currentUser = getCurrentUser();
         Asset asset = Asset.builder()
                 .assetTag(request.getAssetTag())
@@ -127,7 +133,7 @@ public class AssetService {
                 .category(category)
                 .productMaster(productMaster)
                 .vendor(vendor)
-                .status(request.getStatus() != null ? Asset.AssetStatus.valueOf(request.getStatus()) : Asset.AssetStatus.AVAILABLE)
+                .status(assetStatus)
                 .purchaseDate(request.getPurchaseDate())
                 .purchaseCost(request.getPurchaseCost())
                 .currentValue(request.getCurrentValue() != null ? request.getCurrentValue() : request.getPurchaseCost())
@@ -139,6 +145,8 @@ public class AssetService {
                 .dynamicAttributes(request.getDynamicAttributes())
                 .parentAsset(parentAsset)
                 .createdBy(currentUser)
+                .depreciationRate(request.getDepreciationRate())
+                .disposalDate(requestDisposalDate)
                 .build();
         Asset savedAsset = assetRepository.save(asset);
         try {
@@ -188,6 +196,14 @@ public class AssetService {
         asset.setWarrantyMonths(request.getWarrantyMonths());
         asset.setDynamicAttributes(request.getDynamicAttributes());
         asset.setParentAsset(parentAsset);
+        asset.setDepreciationRate(request.getDepreciationRate());
+        
+        if (asset.getStatus() == Asset.AssetStatus.DISPOSED) {
+            asset.setDisposalDate(request.getDisposalDate() != null ? request.getDisposalDate() : java.time.LocalDate.now());
+        } else {
+            asset.setDisposalDate(request.getDisposalDate());
+        }
+        
         Asset savedAsset = assetRepository.save(asset);
         try {
             String newStatus = savedAsset.getStatus().name();

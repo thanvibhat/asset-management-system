@@ -47,6 +47,9 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private boolean enabled = true;
 
+    @Column(name = "password_reset_required", nullable = false)
+    private boolean passwordResetRequired = false;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

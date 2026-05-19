@@ -43,4 +43,7 @@ public interface AssetRepository extends JpaRepository<Asset, Long> {
     List<Asset> findByWarrantyExpiryBetween(@Param("start") LocalDate start, @Param("end") LocalDate end);
 
     long countByAssetTagStartingWith(String prefix);
+
+    @Query("SELECT COUNT(a) > 0 FROM Asset a WHERE a.createdBy.id = :userId")
+    boolean existsByCreatedById(@Param("userId") Long userId);
 }

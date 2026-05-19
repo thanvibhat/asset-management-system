@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { ThemeService } from '../../services/theme.service';
 import { NotificationService } from '../../services/notification.service';
@@ -11,7 +12,7 @@ import { AiChatbotComponent } from '../ai-chatbot/ai-chatbot.component';
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, AiChatbotComponent],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, AiChatbotComponent, FormsModule],
   templateUrl: './navbar.component.html',
   styleUrls: ['./navbar.component.css']
 })
@@ -21,6 +22,16 @@ export class NavbarComponent implements OnInit, OnDestroy {
   showNotifications = false;
   private pollInterval: any;
   private poppedNotificationIds = new Set<number>();
+
+  showChangePasswordModal = false;
+  resetError = '';
+  resetSuccess = false;
+  submittingReset = false;
+  resetForm = {
+    oldPassword: '',
+    newPassword: '',
+    confirmNewPassword: ''
+  };
 
   constructor(
     public auth: AuthService, 
@@ -103,5 +114,51 @@ export class NavbarComponent implements OnInit, OnDestroy {
   getRoleClass(): string {
     const role = this.auth.roles[0] || '';
     return role.toLowerCase().replace('role_', '');
+  }
+
+  openChangePassword(): void {
+    this.resetForm = { oldPassword: '', newPassword: '', confirmNewPassword: '' };
+    this.resetError = '';
+    this.resetSuccess = false;
+    this.showChangePasswordModal = true;
+  }
+
+  closeChangePassword(): void {
+    this.showChangePasswordModal = false;
+  }
+
+  submitChangePassword(forced: boolean): void {
+    if (this.resetForm.newPassword !== this.resetForm.confirmNewPassword) {
+      this.resetError = 'New password and confirmation do not match';
+      return;
+    }
+    if (this.resetForm.newPassword.length < 6) {
+      this.resetError = 'Password must be at least 6 characters';
+      return;
+    }
+
+    this.resetError = '';
+    this.resetSuccess = false;
+    this.submittingReset = true;
+
+    this.auth.changePassword(this.resetForm).subscribe({
+      next: () => {
+        this.submittingReset = false;
+        this.resetSuccess = true;
+        if (forced) {
+          this.auth.updateCurrentUserPasswordResetFlag(false);
+          this.toastService.success('Password updated successfully!');
+        } else {
+          this.toastService.success('Password updated successfully!');
+          setTimeout(() => {
+            this.closeChangePassword();
+          }, 1500);
+        }
+      },
+      error: err => {
+        this.resetError = err.error?.message || 'Error changing password';
+        this.submittingReset = false;
+      }
+    });
   }
 }

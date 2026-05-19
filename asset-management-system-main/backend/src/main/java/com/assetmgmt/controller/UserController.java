@@ -2,6 +2,7 @@ package com.assetmgmt.controller;
 
 import com.assetmgmt.dto.AuthDto;
 import com.assetmgmt.service.UserService;
+import com.assetmgmt.service.AuthService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
@@ -15,9 +16,11 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
+    private final AuthService authService;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, AuthService authService) {
         this.userService = userService;
+        this.authService = authService;
     }
 
     @GetMapping
@@ -64,5 +67,25 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<AuthDto.UserDto>> bulkCreateUsers(@RequestBody List<AuthDto.CreateUserRequest> requests) {
         return ResponseEntity.ok(userService.bulkCreateUsers(requests));
+    }
+
+    @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<AuthDto.UserDto> createUser(@jakarta.validation.Valid @RequestBody AuthDto.CreateUserRequest request) {
+        return ResponseEntity.ok(authService.createUser(request));
+    }
+
+    @PostMapping("/{id}/reset-password")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> resetPassword(@PathVariable Long id) {
+        userService.resetPassword(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<AuthDto.UserDto> changePassword(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal org.springframework.security.core.userdetails.UserDetails userDetails,
+            @jakarta.validation.Valid @RequestBody AuthDto.ChangePasswordRequest request) {
+        return ResponseEntity.ok(userService.changePassword(userDetails.getUsername(), request));
     }
 }
