@@ -12,305 +12,715 @@
   </div>
 
   <div *ngIf="!loading && stats" class="reports-container">
-    <!-- Section 1: Overview -->
-    <section class="report-section">
-      <h2 class="section-title">Overview</h2>
-      <div class="stat-cards">
-        <div class="stat-card">
-          <span class="stat-label">Total Assets</span>
-          <span class="stat-value">{{ stats.totalAssets }}</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Allocated</span>
-          <span class="stat-value text-primary">{{ stats.allocatedAssets }}</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Available</span>
-          <span class="stat-value text-success">{{ stats.availableAssets }}</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Under Maintenance</span>
-          <span class="stat-value text-warning">{{ stats.maintenanceAssets }}</span>
-        </div>
-      </div>
-    </section>
-
-    <div class="grid-2">
-      <!-- Section 2: Asset Distribution -->
-      <section class="report-section">
-        <h2 class="section-title">Category Distribution</h2>
-        <div class="card">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Category</th>
-                <th class="text-right">Count</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let entry of getEntries(stats.categoryDistribution)">
-                <td>{{ entry[0] }}</td>
-                <td class="text-right">{{ entry[1] }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="report-section">
-        <h2 class="section-title">Status Distribution</h2>
-        <div class="card">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Status</th>
-                <th class="text-right">Count</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let entry of getEntries(stats.statusDistribution)">
-                <td>
-                  <span class="badge" [ngClass]="'badge-' + entry[0].toLowerCase()">
-                    {{ entry[0] }}
-                  </span>
-                </td>
-                <td class="text-right">{{ entry[1] }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+    <!-- Segmented Workspace Switcher -->
+    <div class="workspace-switcher">
+      <button class="workspace-tab" [class.active]="activeWorkspaceTab === 'inventory'" (click)="setWorkspaceTab('inventory')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="9" y1="3" x2="9" y2="21"></line>
+        </svg>
+        <span>Inventory Distribution</span>
+      </button>
+      <button class="workspace-tab" [class.active]="activeWorkspaceTab === 'spend'" (click)="setWorkspaceTab('spend')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="1" x2="12" y2="23"></line>
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+        </svg>
+        <span>Cost & Spend Analytics</span>
+      </button>
+      <button class="workspace-tab" [class.active]="activeWorkspaceTab === 'performance'" (click)="setWorkspaceTab('performance')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+          <polyline points="2 17 12 22 22 17"></polyline>
+          <polyline points="2 12 12 17 22 12"></polyline>
+        </svg>
+        <span>Asset Performance & Rankings</span>
+      </button>
     </div>
 
-    <!-- Section 4: Maintenance Analytics -->
-    <section class="report-section" *ngIf="maintenanceAnalytics">
-      <h2 class="section-title">Maintenance Insights</h2>
-      <div class="grid-2">
-        <div class="card">
-          <h3 class="card-title">Cost by Category</h3>
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Category</th>
-                <th class="text-right">Total Cost</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let entry of getEntries(maintenanceAnalytics.costByCategory)">
-                <td>{{ entry[0] }}</td>
-                <td class="text-right">{{ entry[1] | currency:'INR':'symbol' }}</td>
-              </tr>
-            </tbody>
-          </table>
+    <!-- Tab 1: Inventory Workspace -->
+    <ng-container *ngIf="activeWorkspaceTab === 'inventory'">
+      <!-- Section 1: Overview -->
+      <section class="report-section">
+        <div class="stat-cards">
+          <div class="stat-card">
+            <span class="stat-label">Total Assets</span>
+            <span class="stat-value">{{ stats.totalAssets }}</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Allocated</span>
+            <span class="stat-value text-primary">{{ stats.allocatedAssets }}</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Available</span>
+            <span class="stat-value text-success">{{ stats.availableAssets }}</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Under Maintenance</span>
+            <span class="stat-value text-warning">{{ stats.maintenanceAssets }}</span>
+          </div>
         </div>
-        <div class="card">
-          <h3 class="card-title">Top Costly Assets</h3>
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Asset Tag</th>
-                <th>Name</th>
-                <th class="text-right">Cost</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let asset of maintenanceAnalytics.topCostlyAssets">
-                <td>{{ asset.assetTag }}</td>
-                <td>{{ asset.assetName }}</td>
-                <td class="text-right">{{ asset.totalCost | currency:'INR':'symbol' }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- Section 5: Procurement Analytics -->
-    <section class="report-section" *ngIf="procurementAnalytics">
-      <h2 class="section-title">Procurement Spend</h2>
-      <div class="card">
-        <div class="grid-2">
-          <div>
-            <h3 class="card-title">Spend by Vendor</h3>
+      <div class="grid-2">
+        <!-- Section 2: Asset Distribution -->
+        <section class="report-section">
+          <h2 class="section-title">Category Distribution</h2>
+          <div class="card">
             <table class="table">
               <thead>
                 <tr>
-                  <th>Vendor</th>
-                  <th class="text-right">Total Spend</th>
+                  <th>Category</th>
+                  <th class="text-right">Count</th>
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let entry of getEntries(procurementAnalytics.spendByVendor)">
+                <tr *ngFor="let entry of getEntries(stats.categoryDistribution)" (click)="onCategoryClick(entry[0])" class="clickable-row">
+                  <td>{{ entry[0] }}</td>
+                  <td class="text-right">{{ entry[1] }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="report-section">
+          <h2 class="section-title">Status Distribution</h2>
+          <div class="card">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Status</th>
+                  <th class="text-right">Count</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let entry of getEntries(stats.statusDistribution)" (click)="onStatusClick(entry[0])" class="clickable-row">
+                  <td>
+                    <span class="badge" [ngClass]="'badge-' + entry[0].toLowerCase()">
+                      {{ entry[0] }}
+                    </span>
+                  </td>
+                  <td class="text-right">{{ entry[1] }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <!-- Section 3: Asset Warranty Status -->
+      <section class="report-section" style="margin-top: 30px;">
+        <div class="card-header-row" style="margin-bottom: 16px;">
+          <div class="section-title-group" style="display: flex; align-items: center; gap: 8px;">
+            <h2 class="section-title">Asset Warranty Analysis</h2>
+            <span class="section-ranking-criteria" style="color: var(--text-3); font-size: 11px; font-weight: 500;">
+              Track active warranties, expirations, and child asset associations
+            </span>
+          </div>
+          <div class="header-actions">
+            <!-- Segmented Control to switch between All, Under Warranty, Expired/No Warranty -->
+            <div class="segmented-control" style="display: flex; gap: 8px; background: rgba(0,0,0,0.03); padding: 4px; border-radius: 8px;">
+              <button type="button" class="btn btn-xs" [class.btn-primary]="warrantyFilter === 'all'" [class.btn-outline-secondary]="warrantyFilter !== 'all'" (click)="setWarrantyFilter('all')">All</button>
+              <button type="button" class="btn btn-xs" [class.btn-primary]="warrantyFilter === 'active'" [class.btn-outline-secondary]="warrantyFilter !== 'active'" (click)="setWarrantyFilter('active')">Under Warranty</button>
+              <button type="button" class="btn btn-xs" [class.btn-primary]="warrantyFilter === 'expired'" [class.btn-outline-secondary]="warrantyFilter !== 'expired'" (click)="setWarrantyFilter('expired')">Expired / None</button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card" style="padding: 0; overflow: hidden; border-radius: var(--radius-lg); border: 1px solid var(--border); background: var(--bg-card);">
+          <div style="max-height: 400px; overflow-y: auto;">
+            <table class="table" style="margin: 0; width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="background: var(--bg-3); border-bottom: 1px solid var(--border);">
+                  <th style="padding: 12px 16px;">Asset Tag & Name</th>
+                  <th style="padding: 12px 16px;">Type</th>
+                  <th style="padding: 12px 16px;">Parent Asset</th>
+                  <th style="padding: 12px 16px;">Purchase Date</th>
+                  <th style="padding: 12px 16px;">Warranty Months</th>
+                  <th style="padding: 12px 16px;">Expiry Date</th>
+                  <th style="padding: 12px 16px; text-align: center;">Warranty Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let asset of getFilteredWarrantyAssets()" style="border-bottom: 1px solid var(--border);">
+                  <td style="padding: 12px 16px;">
+                    <div style="font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 6px;">
+                      {{ asset.name }}
+                      <button type="button" (click)="openHistory(asset)" title="View Event History"
+                              style="background:none;border:none;color:var(--primary);cursor:pointer;padding:2px;display:inline-flex;align-items:center;justify-content:center;transition:transform 0.15s ease;opacity:0.8;"
+                              onmouseover="this.style.transform='scale(1.15)';this.style.opacity='1';"
+                              onmouseout="this.style.transform='scale(1)';this.style.opacity='0.8';">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                          <polyline points="3 3 3 8 8 8"></polyline>
+                          <line x1="12" y1="7" x2="12" y2="12"></line>
+                          <polyline points="12 12 16 14"></polyline>
+                        </svg>
+                      </button>
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-3); margin-top: 2px;">{{ asset.assetTag }}</div>
+                  </td>
+                  <td style="padding: 12px 16px;">
+                    <span class="badge" [ngClass]="asset.parentId ? 'badge-info' : 'badge-secondary'" style="font-size: 11px;">
+                      {{ asset.parentId ? 'Child Asset' : 'Independent' }}
+                    </span>
+                  </td>
+                  <td style="padding: 12px 16px;">
+                    <div *ngIf="asset.parentId; else noParent">
+                      <span style="font-weight: 600; color: var(--primary);">{{ asset.parentTag }}</span>
+                    </div>
+                    <ng-template #noParent><span style="color: var(--text-3); font-style: italic;">-</span></ng-template>
+                  </td>
+                  <td style="padding: 12px 16px; color: var(--text-2);">{{ asset.purchaseDate ? (asset.purchaseDate | date:'mediumDate') : '-' }}</td>
+                  <td style="padding: 12px 16px; color: var(--text-2);">{{ asset.warrantyMonths ? asset.warrantyMonths + ' mos' : '-' }}</td>
+                  <td style="padding: 12px 16px; color: var(--text-2);">
+                    <span [ngStyle]="{'font-weight': asset.warrantyExpiryDate ? '600' : 'normal'}">
+                      {{ asset.warrantyExpiryDate ? (asset.warrantyExpiryDate | date:'mediumDate') : 'N/A' }}
+                    </span>
+                  </td>
+                  <td style="padding: 12px 16px; text-align: center;">
+                    <span class="badge" [ngClass]="isAssetUnderWarranty(asset) ? 'badge-success' : 'badge-danger'">
+                      {{ isAssetUnderWarranty(asset) ? 'Under Warranty' : 'Expired / None' }}
+                    </span>
+                  </td>
+                </tr>
+                <tr *ngIf="getFilteredWarrantyAssets().length === 0">
+                  <td colspan="7" class="text-center py-4 text-muted" style="padding: 24px; text-align: center; color: var(--text-3);">No assets match the selected filter.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </ng-container>
+
+    <!-- Tab 2: Spend & Cost Workspace -->
+    <ng-container *ngIf="activeWorkspaceTab === 'spend'">
+      <!-- Section 4: Maintenance Analytics -->
+      <section class="report-section" *ngIf="maintenanceAnalytics">
+        <h2 class="section-title">Maintenance Insights</h2>
+        <div class="grid-2">
+          <div class="card">
+            <h3 class="card-title">Cost by Category</h3>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Category</th>
+                  <th class="text-right">Total Cost</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let entry of getEntries(maintenanceAnalytics.costByCategory)">
                   <td>{{ entry[0] }}</td>
                   <td class="text-right">{{ entry[1] | currency:'INR':'symbol' }}</td>
                 </tr>
               </tbody>
             </table>
           </div>
-          <div>
-            <h3 class="card-title">Spending Trends</h3>
+          <div class="card">
+            <h3 class="card-title">Top Costly Assets</h3>
             <table class="table">
               <thead>
                 <tr>
-                  <th>Month</th>
-                  <th class="text-right">Spend</th>
-                  <th class="text-right">Qty</th>
+                  <th>Asset Tag</th>
+                  <th>Name</th>
+                  <th class="text-right">Cost</th>
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let trend of procurementAnalytics.monthlySpendTrends">
-                  <td>{{ trend.month }}</td>
-                  <td class="text-right">{{ trend.value | currency:'INR':'symbol' }}</td>
-                  <td class="text-right">{{ trend.count }}</td>
+                <tr *ngFor="let asset of maintenanceAnalytics.topCostlyAssets">
+                  <td>{{ asset.assetTag }}</td>
+                  <td>{{ asset.assetName }}</td>
+                  <td class="text-right">{{ asset.totalCost | currency:'INR':'symbol' }}</td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
+      </section>
+
+      <!-- Section 5: Procurement Analytics -->
+      <section class="report-section" *ngIf="procurementAnalytics">
+        <h2 class="section-title">Procurement Spend</h2>
+        <div class="card">
+          <div class="grid-2">
+            <div>
+              <h3 class="card-title">Spend by Vendor</h3>
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Vendor</th>
+                    <th class="text-right">Total Spend</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let entry of getEntries(procurementAnalytics.spendByVendor)">
+                    <td>{{ entry[0] }}</td>
+                    <td class="text-right">{{ entry[1] | currency:'INR':'symbol' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <h3 class="card-title">Spending Trends</h3>
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Month</th>
+                    <th class="text-right">Spend</th>
+                    <th class="text-right">Qty</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let trend of procurementAnalytics.monthlySpendTrends">
+                    <td>{{ trend.month }}</td>
+                    <td class="text-right">{{ trend.value | currency:'INR':'symbol' }}</td>
+                    <td class="text-right">{{ trend.count }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </ng-container>
+
+    <!-- Tab 3: Detailed Metrics & Rankings -->
+    <ng-container *ngIf="activeWorkspaceTab === 'performance'">
+      <!-- Dynamic Metric Filters -->
+      <section class="report-section filters-section">
+        <div class="card filter-card">
+          <div class="filter-header">
+            <h3 class="filter-title">
+              <svg class="filter-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+              </svg>
+              Filter Detailed Metrics
+            </h3>
+            <span class="filter-subtitle">Refine performing, costly, repair, and value retention records</span>
+          </div>
+          
+          <div class="filter-grid">
+            <div class="filter-group">
+              <label class="filter-label">From Date (Purchase)</label>
+              <input type="date" class="filter-input" [(ngModel)]="filterFromDate" (change)="applyFilters()">
+            </div>
+            
+            <div class="filter-group">
+              <label class="filter-label">To Date (Purchase)</label>
+              <input type="date" class="filter-input" [(ngModel)]="filterToDate" (change)="applyFilters()">
+            </div>
+            
+            <div class="filter-group">
+              <label class="filter-label">Category</label>
+              <select class="filter-select" [(ngModel)]="filterCategoryId" (change)="applyFilters()">
+                <option [ngValue]="null">All Categories</option>
+                <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
+              </select>
+            </div>
+
+            <div class="filter-actions-group">
+              <button class="btn btn-sm btn-outline-primary" (click)="applyFilters()" [disabled]="filteringMetrics">
+                <span *ngIf="!filteringMetrics">Apply</span>
+                <span *ngIf="filteringMetrics">Loading...</span>
+              </button>
+              <button class="btn btn-sm btn-outline-secondary" (click)="resetFilters()">Reset</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Detailed Metrics Sections -->
+      <div class="grid-2">
+        <!-- Best Performing Assets -->
+        <section class="report-section">
+          <div class="card-header-row">
+            <div class="section-title-group">
+              <h2 class="section-title">Best Performing Assets</h2>
+              <button class="btn-info-icon" (click)="toggleInfoTooltip('topPerformers', $event)" title="View Ranking Criteria">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+              </button>
+              
+              <!-- Sleek glass popover tooltip -->
+              <div class="info-popover card" *ngIf="activeInfoTooltip === 'topPerformers'" (click)="$event.stopPropagation()">
+                <div class="info-popover-arrow"></div>
+                <span class="info-popover-text">Ranked by high value retention % & low maintenance-to-purchase cost ratio</span>
+              </div>
+            </div>
+            <div class="header-actions">
+              <div class="dropdown-wrapper">
+                <button class="btn btn-sm btn-outline-success btn-icon" (click)="toggleDownloadDropdown('topPerformers', $event)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                  </svg>
+                  <span>Download</span>
+                </button>
+                <div class="download-dropdown" *ngIf="activeDropdown === 'topPerformers'">
+                  <button class="dropdown-item" (click)="downloadFormat('topPerformers', 'xls')">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                      <line x1="9" y1="9" x2="15" y2="15"></line>
+                      <line x1="15" y1="9" x2="9" y2="15"></line>
+                    </svg>
+                    Excel Spreadsheet (.xls)
+                  </button>
+                  <button class="dropdown-item" (click)="downloadFormat('topPerformers', 'pdf')">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                      <polyline points="14 2 14 8 20 8"></polyline>
+                    </svg>
+                    PDF Document (.pdf)
+                  </button>
+                </div>
+              </div>
+              <button class="btn btn-sm btn-outline-primary" (click)="askAi('Analyze our best performing assets.')">Ask AI</button>
+            </div>
+          </div>
+          <div class="card border-top-success">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Asset</th>
+                  <th class="text-right">Retention %</th>
+                  <th class="text-right">Maint. Ratio</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let a of topPerformers" (click)="onAssetClick('topPerformers')" class="clickable-row">
+                  <td>
+                    <div class="font-weight-600" style="display: flex; align-items: center; gap: 6px;">
+                      {{ a.assetName }}
+                      <button type="button" (click)="openHistory(a.assetId, a.assetTag, a.assetName); $event.stopPropagation();" title="View Event History"
+                              style="background:none;border:none;color:var(--primary);cursor:pointer;padding:2px;display:inline-flex;align-items:center;justify-content:center;transition:transform 0.15s ease;opacity:0.8;"
+                              onmouseover="this.style.transform='scale(1.15)';this.style.opacity='1';"
+                              onmouseout="this.style.transform='scale(1)';this.style.opacity='0.8';">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                          <polyline points="3 3 3 8 8 8"></polyline>
+                          <line x1="12" y1="7" x2="12" y2="12"></line>
+                          <polyline points="12 12 16 14"></polyline>
+                        </svg>
+                      </button>
+                    </div>
+                    <div class="text-3 text-muted">{{ a.assetTag }}</div>
+                  </td>
+                  <td class="text-right">{{ a.currentValueRetentionPct | number:'1.1-1' }}%</td>
+                  <td class="text-right">{{ a.maintenanceToPurchaseRatio | number:'1.2-2' }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="card-footer-row text-center mt-2" style="border-top: 1px dashed var(--border); padding-top: 8px;">
+              <button class="btn-show-entire" (click)="onAssetClick('topPerformers')">
+                Show Entire Ranked List
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Highest Maintenance Cost -->
+        <section class="report-section">
+          <div class="card-header-row">
+            <div class="section-title-group">
+              <h2 class="section-title">Highest Maintenance Cost</h2>
+              <button class="btn-info-icon" (click)="toggleInfoTooltip('highCost', $event)" title="View Ranking Criteria">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+              </button>
+              
+              <!-- Sleek glass popover tooltip -->
+              <div class="info-popover card" *ngIf="activeInfoTooltip === 'highCost'" (click)="$event.stopPropagation()">
+                <div class="info-popover-arrow"></div>
+                <span class="info-popover-text">Ranked by total finished maintenance expense</span>
+              </div>
+            </div>
+            <div class="header-actions">
+              <div class="dropdown-wrapper">
+                <button class="btn btn-sm btn-outline-danger btn-icon" (click)="toggleDownloadDropdown('highCost', $event)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                  </svg>
+                  <span>Download</span>
+                </button>
+                <div class="download-dropdown" *ngIf="activeDropdown === 'highCost'">
+                  <button class="dropdown-item" (click)="downloadFormat('highCost', 'xls')">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                      <line x1="9" y1="9" x2="15" y2="15"></line>
+                      <line x1="15" y1="9" x2="9" y2="15"></line>
+                    </svg>
+                    Excel Spreadsheet (.xls)
+                  </button>
+                  <button class="dropdown-item" (click)="downloadFormat('highCost', 'pdf')">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                      <polyline points="14 2 14 8 20 8"></polyline>
+                    </svg>
+                    PDF Document (.pdf)
+                  </button>
+                </div>
+              </div>
+              <button class="btn btn-sm btn-outline-primary" (click)="askAi('Review these high maintenance cost assets.')">Ask AI</button>
+            </div>
+          </div>
+          <div class="card border-top-danger">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Asset</th>
+                  <th class="text-right">Maint. Cost</th>
+                  <th class="text-right">Ratio</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let a of highCostAssets" (click)="onAssetClick('highCost')" class="clickable-row">
+                  <td>
+                    <div class="font-weight-600" style="display: flex; align-items: center; gap: 6px;">
+                      {{ a.assetName }}
+                      <button type="button" (click)="openHistory(a.assetId, a.assetTag, a.assetName); $event.stopPropagation();" title="View Event History"
+                              style="background:none;border:none;color:var(--primary);cursor:pointer;padding:2px;display:inline-flex;align-items:center;justify-content:center;transition:transform 0.15s ease;opacity:0.8;"
+                              onmouseover="this.style.transform='scale(1.15)';this.style.opacity='1';"
+                              onmouseout="this.style.transform='scale(1)';this.style.opacity='0.8';">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                          <polyline points="3 3 3 8 8 8"></polyline>
+                          <line x1="12" y1="7" x2="12" y2="12"></line>
+                          <polyline points="12 12 16 14"></polyline>
+                        </svg>
+                      </button>
+                    </div>
+                    <div class="text-3 text-muted">{{ a.assetTag }}</div>
+                  </td>
+                  <td class="text-right">{{ a.totalMaintenanceCost | currency:'INR':'symbol':'1.0-0' }}</td>
+                  <td class="text-right">
+                    <span [class.text-danger]="a.maintenanceToPurchaseRatio >= 0.5">
+                      {{ a.maintenanceToPurchaseRatio | number:'1.2-2' }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="card-footer-row text-center mt-2" style="border-top: 1px dashed var(--border); padding-top: 8px;">
+              <button class="btn-show-entire" (click)="onAssetClick('highCost')">
+                Show Entire Ranked List
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Frequent Repairs -->
+        <section class="report-section">
+          <div class="card-header-row">
+            <div class="section-title-group">
+              <h2 class="section-title">Frequent Repairs</h2>
+              <button class="btn-info-icon" (click)="toggleInfoTooltip('frequent', $event)" title="View Ranking Criteria">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+              </button>
+              
+              <!-- Sleek glass popover tooltip -->
+              <div class="info-popover card" *ngIf="activeInfoTooltip === 'frequent'" (click)="$event.stopPropagation()">
+                <div class="info-popover-arrow"></div>
+                <span class="info-popover-text">Ranked by completed corrective maintenance ticket count</span>
+              </div>
+            </div>
+            <div class="header-actions">
+              <div class="dropdown-wrapper">
+                <button class="btn btn-sm btn-outline-warning btn-icon" (click)="toggleDownloadDropdown('frequent', $event)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                  </svg>
+                  <span>Download</span>
+                </button>
+                <div class="download-dropdown" *ngIf="activeDropdown === 'frequent'">
+                  <button class="dropdown-item" (click)="downloadFormat('frequent', 'xls')">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                      <line x1="9" y1="9" x2="15" y2="15"></line>
+                      <line x1="15" y1="9" x2="9" y2="15"></line>
+                    </svg>
+                    Excel Spreadsheet (.xls)
+                  </button>
+                  <button class="dropdown-item" (click)="downloadFormat('frequent', 'pdf')">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                      <polyline points="14 2 14 8 20 8"></polyline>
+                    </svg>
+                    PDF Document (.pdf)
+                  </button>
+                </div>
+              </div>
+              <button class="btn btn-sm btn-outline-primary" (click)="askAi('Which assets are requiring too frequent repairs?')">Ask AI</button>
+            </div>
+          </div>
+          <div class="card border-top-warning">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Asset</th>
+                  <th class="text-right">Repairs</th>
+                  <th class="text-right">Avg Gap (Days)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let a of frequentRepairs" (click)="onAssetClick('frequent')" class="clickable-row">
+                  <td>
+                    <div class="font-weight-600" style="display: flex; align-items: center; gap: 6px;">
+                      {{ a.assetName }}
+                      <button type="button" (click)="openHistory(a.assetId, a.assetTag, a.assetName); $event.stopPropagation();" title="View Event History"
+                              style="background:none;border:none;color:var(--primary);cursor:pointer;padding:2px;display:inline-flex;align-items:center;justify-content:center;transition:transform 0.15s ease;opacity:0.8;"
+                              onmouseover="this.style.transform='scale(1.15)';this.style.opacity='1';"
+                              onmouseout="this.style.transform='scale(1)';this.style.opacity='0.8';">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                          <polyline points="3 3 3 8 8 8"></polyline>
+                          <line x1="12" y1="7" x2="12" y2="12"></line>
+                          <polyline points="12 12 16 14"></polyline>
+                        </svg>
+                      </button>
+                    </div>
+                    <div class="text-3 text-muted">{{ a.assetTag }}</div>
+                  </td>
+                  <td class="text-right">{{ a.correctiveRepairCount }}</td>
+                  <td class="text-right">{{ a.averageDaysBetweenRepairs ? (a.averageDaysBetweenRepairs | number:'1.0-0') : 'N/A' }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="card-footer-row text-center mt-2" style="border-top: 1px dashed var(--border); padding-top: 8px;">
+              <button class="btn-show-entire" (click)="onAssetClick('frequent')">
+                Show Entire Ranked List
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Poor Value Assets -->
+        <section class="report-section">
+          <div class="card-header-row">
+            <div class="section-title-group">
+              <h2 class="section-title">Poor Value Assets</h2>
+              <button class="btn-info-icon" (click)="toggleInfoTooltip('poorValue', $event)" title="View Ranking Criteria">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+              </button>
+              
+              <!-- Sleek glass popover tooltip -->
+              <div class="info-popover card" *ngIf="activeInfoTooltip === 'poorValue'" (click)="$event.stopPropagation()">
+                <div class="info-popover-arrow"></div>
+                <span class="info-popover-text">Ranked by high maintenance-to-purchase cost ratio (>80% requires replacement)</span>
+              </div>
+            </div>
+            <div class="header-actions">
+              <div class="dropdown-wrapper">
+                <button class="btn btn-sm btn-outline-coral btn-icon" (click)="toggleDownloadDropdown('poorValue', $event)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                  </svg>
+                  <span>Download</span>
+                </button>
+                <div class="download-dropdown" *ngIf="activeDropdown === 'poorValue'">
+                  <button class="dropdown-item" (click)="downloadFormat('poorValue', 'xls')">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                      <line x1="9" y1="9" x2="15" y2="15"></line>
+                      <line x1="15" y1="9" x2="9" y2="15"></line>
+                    </svg>
+                    Excel Spreadsheet (.xls)
+                  </button>
+                  <button class="dropdown-item" (click)="downloadFormat('poorValue', 'pdf')">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                      <polyline points="14 2 14 8 20 8"></polyline>
+                    </svg>
+                    PDF Document (.pdf)
+                  </button>
+                </div>
+              </div>
+              <button class="btn btn-sm btn-outline-primary" (click)="askAi('Review these poor value assets and provide retirement advice.')">Ask AI</button>
+            </div>
+          </div>
+          <div class="card border-top-coral">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Asset</th>
+                  <th class="text-right">Ratio</th>
+                  <th class="text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let a of poorValueAssets" (click)="onAssetClick('poorValue')" class="clickable-row">
+                  <td>
+                    <div class="font-weight-600" style="display: flex; align-items: center; gap: 6px;">
+                      {{ a.assetName }}
+                      <button type="button" (click)="openHistory(a.assetId, a.assetTag, a.assetName); $event.stopPropagation();" title="View Event History"
+                              style="background:none;border:none;color:var(--primary);cursor:pointer;padding:2px;display:inline-flex;align-items:center;justify-content:center;transition:transform 0.15s ease;opacity:0.8;"
+                              onmouseover="this.style.transform='scale(1.15)';this.style.opacity='1';"
+                              onmouseout="this.style.transform='scale(1)';this.style.opacity='0.8';">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                          <polyline points="3 3 3 8 8 8"></polyline>
+                          <line x1="12" y1="7" x2="12" y2="12"></line>
+                          <polyline points="12 12 16 14"></polyline>
+                        </svg>
+                      </button>
+                    </div>
+                    <div class="text-3 text-muted">{{ a.assetTag }}</div>
+                  </td>
+                  <td class="text-right text-danger font-weight-600">{{ a.maintenanceToPurchaseRatio | number:'1.2-2' }}</td>
+                  <td class="text-center">
+                    <span class="badge" [ngClass]="a.maintenanceToPurchaseRatio > 0.8 ? 'badge-danger' : 'badge-warning'">
+                      {{ a.maintenanceToPurchaseRatio > 0.8 ? 'Replace' : 'Review' }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="card-footer-row text-center mt-2" style="border-top: 1px dashed var(--border); padding-top: 8px;">
+              <button class="btn-show-entire" (click)="onAssetClick('poorValue')">
+                Show Entire Ranked List
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </section>
       </div>
-    </section>
+    </ng-container>
 
-    <!-- Detailed Metrics Sections -->
-    <div class="grid-2">
-      <!-- Best Performing Assets -->
-      <section class="report-section">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h2 class="section-title mb-0">Best Performing Assets</h2>
-          <div class="d-flex gap-2">
-            <button class="btn btn-sm btn-outline-success" (click)="download('top-performers', 'top_performers.csv')">CSV</button>
-            <button class="btn btn-sm btn-outline-primary" (click)="askAi('What makes our top assets perform so well?')">Ask AI</button>
-          </div>
-        </div>
-        <div class="card border-top-success">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Asset</th>
-                <th class="text-right">Retention %</th>
-                <th class="text-right">Maint. Ratio</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let a of topPerformers">
-                <td>
-                  <div class="font-weight-600">{{ a.assetName }}</div>
-                  <div class="text-3 text-muted">{{ a.assetTag }}</div>
-                </td>
-                <td class="text-right">{{ a.currentValueRetentionPct | number:'1.1-1' }}%</td>
-                <td class="text-right">{{ a.maintenanceToPurchaseRatio | number:'1.2-2' }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- Highest Maintenance Cost -->
-      <section class="report-section">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h2 class="section-title mb-0">Highest Maintenance Cost</h2>
-          <div class="d-flex gap-2">
-            <button class="btn btn-sm btn-outline-danger" (click)="download('maintenance-costs', 'maintenance_report.csv')">CSV</button>
-            <button class="btn btn-sm btn-outline-primary" (click)="askAi('Analyze our highest maintenance cost assets and suggest actions.')">Ask AI</button>
-          </div>
-        </div>
-        <div class="card border-top-danger">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Asset</th>
-                <th class="text-right">Maint. Cost</th>
-                <th class="text-right">Ratio</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let a of highCostAssets">
-                <td>
-                  <div class="font-weight-600">{{ a.assetName }}</div>
-                  <div class="text-3 text-muted">{{ a.assetTag }}</div>
-                </td>
-                <td class="text-right">{{ a.totalMaintenanceCost | currency:'INR':'symbol':'1.0-0' }}</td>
-                <td class="text-right">
-                  <span [class.text-danger]="a.maintenanceToPurchaseRatio >= 0.5">
-                    {{ a.maintenanceToPurchaseRatio | number:'1.2-2' }}
-                  </span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- Frequent Repairs -->
-      <section class="report-section">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h2 class="section-title mb-0">Frequent Repairs</h2>
-          <div class="d-flex gap-2">
-            <button class="btn btn-sm btn-outline-warning" (click)="download('frequent-repairs', 'frequent_repairs.csv')">CSV</button>
-            <button class="btn btn-sm btn-outline-primary" (click)="askAi('Which assets are requiring too frequent repairs?')">Ask AI</button>
-          </div>
-        </div>
-        <div class="card border-top-warning">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Asset</th>
-                <th class="text-right">Repairs</th>
-                <th class="text-right">Avg Gap (Days)</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let a of frequentRepairs">
-                <td>
-                  <div class="font-weight-600">{{ a.assetName }}</div>
-                  <div class="text-3 text-muted">{{ a.assetTag }}</div>
-                </td>
-                <td class="text-right">{{ a.correctiveRepairCount }}</td>
-                <td class="text-right">{{ a.averageDaysBetweenRepairs ? (a.averageDaysBetweenRepairs | number:'1.0-0') : 'N/A' }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- Poor Value Assets -->
-      <section class="report-section">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h2 class="section-title mb-0">Poor Value Assets</h2>
-          <div class="d-flex gap-2">
-            <button class="btn btn-sm btn-outline-coral" (click)="download('poor-value-assets', 'poor_value_assets.csv')">CSV</button>
-            <button class="btn btn-sm btn-outline-primary" (click)="askAi('Review these poor value assets and provide retirement advice.')">Ask AI</button>
-          </div>
-        </div>
-        <div class="card border-top-coral">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Asset</th>
-                <th class="text-right">Ratio</th>
-                <th class="text-center">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let a of poorValueAssets">
-                <td>
-                  <div class="font-weight-600">{{ a.assetName }}</div>
-                  <div class="text-3 text-muted">{{ a.assetTag }}</div>
-                </td>
-                <td class="text-right text-danger font-weight-600">{{ a.maintenanceToPurchaseRatio | number:'1.2-2' }}</td>
-                <td class="text-center">
-                  <span class="badge" [ngClass]="a.maintenanceToPurchaseRatio > 0.8 ? 'badge-danger' : 'badge-warning'">
-                    {{ a.maintenanceToPurchaseRatio > 0.8 ? 'Replace' : 'Review' }}
-                  </span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </div>
-
-    <!-- Section 3: Export Reports -->
-    <section class="report-section report-section-inline">
+    <!-- Section 3: Export Reports (Visible across all workspaces at the bottom) -->
+    <section class="report-section report-section-inline" style="margin-top: 10px; border-top: 1px solid var(--border); padding-top: 16px;">
       <h2 class="section-title">Export Reports</h2>
       <div class="export-grid">
         <button class="btn btn-secondary btn-export" (click)="download('assets', 'assets_report.csv')">
@@ -345,5 +755,83 @@
         </button>
       </div>
     </section>
+  </div>
+
+  <!-- History Modal -->
+  <div class="modal-overlay" *ngIf="showHistoryModal" (click)="closeHistoryModal()">
+    <div class="modal" style="max-width:850px;width:96%;"
+         (click)="$event.stopPropagation()">
+      <div class="modal-header" style="padding: 10px 16px;">
+        <h3>📋 History — {{ historyAsset?.assetTag }}: {{ historyAsset?.name }}</h3>
+        <button class="btn-close" (click)="closeHistoryModal()">✕</button>
+      </div>
+      <div class="modal-body" style="padding:0;max-height:560px;overflow-y:auto;">
+
+        <div *ngIf="loadingHistory"
+             style="padding:30px;text-align:center;font-size:13px;color:var(--text-3);">
+          Loading history...
+        </div>
+
+        <div *ngIf="!loadingHistory && assetHistory.length === 0"
+             style="padding:30px;text-align:center;font-size:13px;color:var(--text-3);">
+          No events recorded yet for this asset.
+        </div>
+
+        <div *ngFor="let ev of assetHistory"
+             style="display:flex;gap:10px;padding:8px 16px;
+                    border-bottom:1px solid var(--border);align-items: center;">
+          <div style="font-size:16px;width:24px;flex-shrink:0;
+                      text-align:center;display:flex;align-items:center;justify-content:center;
+                      height:24px;background:var(--bg-3);border-radius:50%;border:1px solid var(--border);">
+            {{ getEventIcon(ev.eventType) }}
+          </div>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+            <div style="display:flex;justify-content:space-between;
+                        align-items:center;gap:8px;flex-wrap:wrap;">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <span style="font-size:13px;font-weight:600;color:var(--text);">
+                  {{ ev.label }}
+                </span>
+                <span *ngIf="ev.performedBy"
+                     style="font-size:11px;color:var(--text-3);background:rgba(0,0,0,0.03);padding:1px 6px;border-radius:4px;">
+                  by {{ ev.performedBy }}
+                </span>
+              </div>
+              <span style="font-size:11px;color:var(--text-3);white-space:nowrap;">
+                {{ ev.eventDate | date:'dd MMM yyyy, h:mm a' }}
+              </span>
+            </div>
+            
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:1px;">
+              <div *ngIf="ev.notes"
+                   style="font-size:12px;color:var(--text-2);line-height:1.3;">
+                {{ ev.notes }}
+              </div>
+              
+              <div *ngIf="ev.fromStatus && ev.toStatus"
+                   style="font-size:11px;display:flex;align-items:center;gap:4px;background:var(--bg-3);padding:2px 6px;border-radius:4px;border:1px solid var(--border);">
+                <span [class]="badgeClass(ev.fromStatus)" style="font-size:10px;padding:1px 4px;">{{ formatStatus(ev.fromStatus) }}</span>
+                <span style="color:var(--text-3);font-size:10px;">→</span>
+                <span [class]="badgeClass(ev.toStatus)" style="font-size:10px;padding:1px 4px;">{{ formatStatus(ev.toStatus) }}</span>
+              </div>
+            </div>
+
+            <div *ngIf="parseMeta(ev.metadata).length > 0"
+                 style="display:flex;flex-wrap:wrap;gap:4px;margin-top:2px;">
+              <span *ngFor="let kv of parseMeta(ev.metadata)"
+                    style="font-size:10px;padding:1px 6px;
+                           background:var(--bg-3);border:1px solid var(--border);
+                           border-radius:4px;color:var(--text-2);font-weight:500;">
+                {{ kv.key }}: <strong style="color:var(--text-1);">{{ kv.value }}</strong>
+              </span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer" style="padding: 8px 16px;">
+        <button class="btn btn-secondary" (click)="closeHistoryModal()">Close</button>
+      </div>
+    </div>
   </div>
 </div>

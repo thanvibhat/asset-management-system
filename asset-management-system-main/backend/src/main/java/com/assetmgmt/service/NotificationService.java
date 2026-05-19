@@ -19,6 +19,9 @@ public class NotificationService {
     }
 
     public void sendNotification(User user, String message, String type) {
+        if (notificationRepository.existsByUserIdAndMessageAndType(user.getId(), message, type)) {
+            return;
+        }
         Notification notification = Notification.builder()
                 .user(user)
                 .message(message)

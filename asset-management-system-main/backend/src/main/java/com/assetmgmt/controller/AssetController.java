@@ -221,4 +221,14 @@ public class AssetController {
     public ResponseEntity<AssetDto.CategoryDetailResponse> updateAttributeSchema(@PathVariable Long id, @Valid @RequestBody AssetDto.AttributeSchemaUpdateRequest request) {
         return ResponseEntity.ok(assetService.updateAttributeSchema(id, request));
     }
+
+    @PutMapping("/{id}/transfer")
+    @PreAuthorize("hasAuthority('ASSET_UPDATE') or hasRole('ADMIN')")
+    public ResponseEntity<AssetDto.AssetResponse> transferAsset(
+            @PathVariable Long id,
+            @RequestParam String newLocation,
+            Authentication authentication) {
+        String username = authentication != null ? authentication.getName() : "system";
+        return ResponseEntity.ok(assetService.transferAsset(id, newLocation, username));
+    }
 }

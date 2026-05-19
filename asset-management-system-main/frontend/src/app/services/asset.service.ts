@@ -27,6 +27,11 @@ export class AssetService {
 
   deleteAsset(id: number): Observable<void> { return this.http.delete<void>(`${this.API}/${id}`); }
 
+  transferAsset(id: number, newLocation: string): Observable<Asset> {
+    let params = new HttpParams().set('newLocation', newLocation);
+    return this.http.put<Asset>(`${this.API}/${id}/transfer`, null, { params });
+  }
+
   getStats(): Observable<DashboardStats> { return this.http.get<DashboardStats>(`${this.API}/dashboard/stats`); }
 
   getCategories(): Observable<AssetCategory[]> { return this.http.get<AssetCategory[]>(`${this.API}/categories`); }

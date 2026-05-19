@@ -52,13 +52,47 @@ public class AssetAnalyticsService {
     }
 
     public List<AssetMetricsDto> getAllMetrics() {
+        return getAllMetrics(null, null, null);
+    }
+
+    public List<AssetMetricsDto> getAllMetrics(LocalDate fromDate, LocalDate toDate, Long categoryId) {
         List<Asset> assets = assetRepository.findAll();
         
-        // Fetch all needed maintenance data in bulk to avoid N+1
-        Map<Long, BigDecimal> costMap = toMap(maintenanceRepository.getMaintenanceCostPerAsset());
-        Map<Long, Long> correctiveCountMap = toCountMap(maintenanceRepository.getCorrectiveCountPerAsset());
-        Map<Long, Long> preventiveCountMap = toCountMap(maintenanceRepository.getPreventiveCountPerAsset());
-        Map<Long, List<LocalDate>> correctiveDatesMap = toDatesMap(maintenanceRepository.getCorrectiveDatesPerAsset());
+        // Filter assets by category if categoryId is provided
+        if (categoryId != null) {
+            assets = assets.stream()
+                .filter(asset -> asset.getCategory() != null && categoryId.equals(asset.getCategory().getId()))
+                .collect(Collectors.toList());
+        }
+        
+        // Filter assets by purchaseDate if fromDate or toDate is provided
+        if (fromDate != null || toDate != null) {
+            assets = assets.stream().filter(asset -> {
+                if (asset.getPurchaseDate() == null) return false;
+                boolean match = true;
+                if (fromDate != null && asset.getPurchaseDate().isBefore(fromDate)) match = false;
+                if (toDate != null && asset.getPurchaseDate().isAfter(toDate)) match = false;
+                return match;
+            }).collect(Collectors.toList());
+        }
+
+        // Fetch needed maintenance data based on date ranges
+        Map<Long, BigDecimal> costMap;
+        Map<Long, Long> correctiveCountMap;
+        Map<Long, Long> preventiveCountMap;
+        Map<Long, List<LocalDate>> correctiveDatesMap;
+
+        if (fromDate != null && toDate != null) {
+            costMap = toMap(maintenanceRepository.getMaintenanceCostPerAssetBetween(fromDate, toDate));
+            correctiveCountMap = toCountMap(maintenanceRepository.getCorrectiveCountPerAssetBetween(fromDate, toDate));
+            preventiveCountMap = toCountMap(maintenanceRepository.getPreventiveCountPerAssetBetween(fromDate, toDate));
+            correctiveDatesMap = toDatesMap(maintenanceRepository.getCorrectiveDatesPerAssetBetween(fromDate, toDate));
+        } else {
+            costMap = toMap(maintenanceRepository.getMaintenanceCostPerAsset());
+            correctiveCountMap = toCountMap(maintenanceRepository.getCorrectiveCountPerAsset());
+            preventiveCountMap = toCountMap(maintenanceRepository.getPreventiveCountPerAsset());
+            correctiveDatesMap = toDatesMap(maintenanceRepository.getCorrectiveDatesPerAsset());
+        }
 
         LocalDate now = LocalDate.now();
 
@@ -97,53 +131,96 @@ public class AssetAnalyticsService {
                     .currentValueRetentionPct(retentionPct)
                     .ageInDays(ageInDays)
                     .compositeScore(retentionPct.doubleValue() - (maintenanceToPurchaseRatio.doubleValue() * 100))
+                    .serialNumber(asset.getSerialNumber())
+                    .manufacturer(asset.getManufacturer())
+                    .model(asset.getModel())
+                    .location(asset.getLocation())
+                    .status(asset.getStatus() != null ? asset.getStatus().name() : "AVAILABLE")
+                    .purchaseDate(asset.getPurchaseDate())
+                    .warrantyMonths(asset.getWarrantyMonths())
                     .build();
             return dto;
         }).collect(Collectors.toList());
     }
 
     public List<AssetMetricsDto> getTopPerformers(int n) {
-        return getAllMetrics().stream()
+        return getTopPerformers(n, null, null, null);
+    }
+
+    public List<AssetMetricsDto> getTopPerformers(int n, LocalDate fromDate, LocalDate toDate, Long categoryId) {
+        return getAllMetrics(fromDate, toDate, categoryId).stream()
                 .sorted(Comparator.comparing(AssetMetricsDto::getCompositeScore).reversed())
                 .limit(n)
                 .collect(Collectors.toList());
     }
 
     public List<AssetMetricsDto> getHighCostAssets(int n) {
-        return getAllMetrics().stream()
+        return getHighCostAssets(n, null, null, null);
+    }
+
+    public List<AssetMetricsDto> getHighCostAssets(int n, LocalDate fromDate, LocalDate toDate, Long categoryId) {
+        return getAllMetrics(fromDate, toDate, categoryId).stream()
                 .sorted(Comparator.comparing(AssetMetricsDto::getTotalMaintenanceCost).reversed())
                 .limit(n)
                 .collect(Collectors.toList());
     }
 
     public List<AssetMetricsDto> getFrequentRepairAssets(int n) {
-        return getAllMetrics().stream()
+        return getFrequentRepairAssets(n, null, null, null);
+    }
+
+    public List<AssetMetricsDto> getFrequentRepairAssets(int n, LocalDate fromDate, LocalDate toDate, Long categoryId) {
+        return getAllMetrics(fromDate, toDate, categoryId).stream()
                 .sorted(Comparator.comparing(AssetMetricsDto::getCorrectiveRepairCount).reversed())
                 .limit(n)
                 .collect(Collectors.toList());
     }
 
     public List<AssetMetricsDto> getPoorValueAssets() {
-        return getAllMetrics().stream()
+        return getPoorValueAssets(null, null, null);
+    }
+
+    public List<AssetMetricsDto> getPoorValueAssets(LocalDate fromDate, LocalDate toDate, Long categoryId) {
+        return getAllMetrics(fromDate, toDate, categoryId).stream()
                 .filter(dto -> dto.getMaintenanceToPurchaseRatio().compareTo(new BigDecimal("0.5")) > 0)
                 .collect(Collectors.toList());
     }
 
     // Helper methods for data processing
     private Map<Long, BigDecimal> toMap(List<Object[]> results) {
-        return results.stream().collect(Collectors.toMap(r -> (Long) r[0], r -> (BigDecimal) r[1]));
+        Map<Long, BigDecimal> map = new HashMap<>();
+        if (results != null) {
+            for (Object[] r : results) {
+                if (r != null && r[0] != null) {
+                    map.put((Long) r[0], r[1] != null ? (BigDecimal) r[1] : BigDecimal.ZERO);
+                }
+            }
+        }
+        return map;
     }
 
     private Map<Long, Long> toCountMap(List<Object[]> results) {
-        return results.stream().collect(Collectors.toMap(r -> (Long) r[0], r -> (Long) r[1]));
+        Map<Long, Long> map = new HashMap<>();
+        if (results != null) {
+            for (Object[] r : results) {
+                if (r != null && r[0] != null) {
+                    map.put((Long) r[0], r[1] != null ? (Long) r[1] : 0L);
+                }
+            }
+        }
+        return map;
     }
 
     private Map<Long, List<LocalDate>> toDatesMap(List<Object[]> results) {
         Map<Long, List<LocalDate>> map = new HashMap<>();
-        for (Object[] r : results) {
-            Long id = (Long) r[0];
-            LocalDate date = (LocalDate) r[1];
-            map.computeIfAbsent(id, k -> new ArrayList<>()).add(date);
+        if (results != null) {
+            for (Object[] r : results) {
+                if (r != null && r[0] != null && r[1] != null) {
+                    Long id = (Long) r[0];
+                    LocalDate date = (LocalDate) r[1];
+                    map.computeIfAbsent(id, k -> new ArrayList<>()).add(date);
+                }
+            }
         }
         return map;
     }

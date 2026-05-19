@@ -45,6 +45,7 @@ public class AssetHistoryDto {
                 case COMPONENT_REPLACED   -> "Component replaced";
                 case WARRANTY_UPDATED     -> "Warranty updated";
                 case RETIRED              -> "Asset retired";
+                case TRANSFERRED          -> "Asset location transferred";
             };
         }
     }

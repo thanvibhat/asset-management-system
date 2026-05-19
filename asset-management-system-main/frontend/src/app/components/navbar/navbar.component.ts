@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { ThemeService } from '../../services/theme.service';
 import { NotificationService } from '../../services/notification.service';
+import { ToastService } from '../../services/toast.service';
 import { Notification } from '../../models/models';
 import { AiChatbotComponent } from '../ai-chatbot/ai-chatbot.component';
 
@@ -19,17 +20,19 @@ export class NavbarComponent implements OnInit, OnDestroy {
   unreadCount = 0;
   showNotifications = false;
   private pollInterval: any;
+  private poppedNotificationIds = new Set<number>();
 
   constructor(
     public auth: AuthService, 
     public themeService: ThemeService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private toastService: ToastService
   ) {}
 
   ngOnInit(): void {
     if (this.auth.isLoggedIn) {
       this.loadNotifications();
-      this.pollInterval = setInterval(() => this.loadUnreadCount(), 60000);
+      this.pollInterval = setInterval(() => this.checkForNewNotifications(), 10000);
     }
   }
 
@@ -45,7 +48,28 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   loadNotifications(): void {
     this.loadUnreadCount();
-    this.notificationService.getNotifications(0, 5).subscribe(page => this.notifications = page.content);
+    this.notificationService.getNotifications(0, 5).subscribe(page => {
+      this.notifications = page.content;
+      if (this.poppedNotificationIds.size === 0) {
+        page.content.forEach(n => this.poppedNotificationIds.add(n.id));
+      }
+    });
+  }
+
+  checkForNewNotifications(): void {
+    this.notificationService.getUnreadCount().subscribe(count => {
+      if (count !== this.unreadCount) {
+        this.notificationService.getNotifications(0, 5).subscribe(page => {
+          const newUnread = page.content.filter(n => !n.read && !this.poppedNotificationIds.has(n.id));
+          newUnread.forEach(n => {
+            this.toastService.info(n.message);
+            this.poppedNotificationIds.add(n.id);
+          });
+          this.notifications = page.content;
+          this.unreadCount = count;
+        });
+      }
+    });
   }
 
   toggleNotifications(): void {

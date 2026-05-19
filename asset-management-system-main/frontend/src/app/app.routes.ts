@@ -13,6 +13,7 @@ export const routes: Routes = [
       { path: 'assets', loadComponent: () => import('./components/assets/assets.component').then(m => m.AssetsComponent) },
       { path: 'allocation', loadComponent: () => import('./components/allocation/allocation.component').then(m => m.AllocationComponent) },
       { path: 'maintenance', loadComponent: () => import('./components/maintenance/maintenance.component').then(m => m.MaintenanceComponent) },
+      { path: 'transfer', loadComponent: () => import('./components/transfer/transfer.component').then(m => m.TransferComponent) },
       { path: 'vendors', loadComponent: () => import('./components/vendors/vendors.component').then(m => m.VendorsComponent) },
       { path: 'reports', loadComponent: () => import('./components/reports/reports.component').then(m => m.ReportsComponent) },
       { path: 'llm-reports', loadComponent: () => import('./components/llm-reports/llm-reports.component').then(m => m.LlmReportsComponent) },

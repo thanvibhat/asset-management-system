@@ -93,6 +93,7 @@ public class AssetDto {
         private LocalDate purchaseDate;
         private BigDecimal purchaseCost;
         private BigDecimal currentValue;
+        @NotBlank(message = "Location is required")
         private String location;
         private String serialNumber;
         private String manufacturer;

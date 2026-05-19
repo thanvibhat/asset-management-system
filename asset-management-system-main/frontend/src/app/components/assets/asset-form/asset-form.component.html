@@ -55,7 +55,7 @@
       
       <!-- Location autocomplete field -->
       <div class="form-group autocomplete-wrap">
-        <label class="form-label">Location</label>
+        <label class="form-label">Location *</label>
         <input class="form-control" formControlName="location"
                (input)="filterLocations($event)"
                (blur)="showLocationDropdown = false"
@@ -64,6 +64,7 @@
           <div class="autocomplete-item" *ngFor="let s of locationSuggestions"
                (mousedown)="selectLocation(s)">{{ s }}</div>
         </div>
+        <div *ngIf="assetForm.get('location')?.touched && assetForm.get('location')?.errors?.['required']" class="error-msg">Location is required</div>
       </div>
     </div>
     

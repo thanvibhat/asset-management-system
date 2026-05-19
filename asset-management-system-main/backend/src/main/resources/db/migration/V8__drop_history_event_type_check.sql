@@ -1,0 +1,1 @@
+ALTER TABLE asset_status_history DROP CONSTRAINT IF EXISTS asset_status_history_event_type_check;

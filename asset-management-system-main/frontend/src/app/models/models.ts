@@ -64,6 +64,8 @@ export interface Asset {
   allocatedAt?: string;
   expectedReturnDate?: string;
   warrantyExpiryDate?: string;
+  parentId?: number;
+  parentTag?: string;
 }
 
 export type AssetStatus = 'AVAILABLE' | 'ALLOCATED' | 'UNDER_MAINTENANCE' | 'DAMAGED' | 'LOST' | 'RETIRED';
@@ -159,4 +161,13 @@ export interface AssetMetricsDto {
   averageDaysBetweenRepairs: number;
   currentValueRetentionPct: number;
   ageInDays: number;
+  
+  // Full asset details
+  serialNumber?: string;
+  manufacturer?: string;
+  model?: string;
+  location?: string;
+  status?: string;
+  purchaseDate?: string;
+  warrantyMonths?: number;
 }

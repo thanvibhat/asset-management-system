@@ -406,4 +406,59 @@ public class AssetService {
 
         return Map.of("imported", imported, "failed", failed, "errors", errors);
     }
+
+    public AssetDto.AssetResponse transferAsset(Long id, String newLocation, String username) {
+        Asset asset = assetRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Asset", id));
+        
+        if (asset.getStatus() == Asset.AssetStatus.ALLOCATED) {
+            throw new BusinessException("Cannot transfer allocated asset: " + asset.getAssetTag());
+        }
+        
+        String oldLocation = asset.getLocation() != null ? asset.getLocation() : "Unassigned";
+        asset.setLocation(newLocation);
+        Asset savedAsset = assetRepository.save(asset);
+        
+        // Record in history for main asset
+        try {
+            assetHistoryService.recordEvent(
+                    asset.getId(),
+                    com.assetmgmt.entity.AssetStatusHistory.EventType.TRANSFERRED,
+                    asset.getStatus().name(),
+                    asset.getStatus().name(),
+                    String.format("Asset transferred from location '%s' to '%s'", oldLocation, newLocation),
+                    username,
+                    null
+            );
+        } catch (Exception e) {
+            log.warn("Failed to record history for transfer: {}", e.getMessage());
+        }
+        
+        // Find and transfer unallocated child assets recursively or directly
+        List<Asset> childAssets = assetRepository.findByParentAssetId(id);
+        for (Asset child : childAssets) {
+            if (child.getStatus() != Asset.AssetStatus.ALLOCATED) {
+                String oldChildLoc = child.getLocation() != null ? child.getLocation() : "Unassigned";
+                child.setLocation(newLocation);
+                assetRepository.save(child);
+                
+                try {
+                    assetHistoryService.recordEvent(
+                            child.getId(),
+                            com.assetmgmt.entity.AssetStatusHistory.EventType.TRANSFERRED,
+                            child.getStatus().name(),
+                            child.getStatus().name(),
+                            String.format("Transferred along with parent asset %s from location '%s' to '%s'", 
+                                    asset.getAssetTag(), oldChildLoc, newLocation),
+                            username,
+                            null
+                    );
+                } catch (Exception e) {
+                    log.warn("Failed to record history for child asset transfer: {}", e.getMessage());
+                }
+            }
+        }
+        
+        return mapToAssetResponse(savedAsset);
+    }
 }

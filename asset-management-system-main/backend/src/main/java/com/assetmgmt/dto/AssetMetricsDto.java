@@ -21,4 +21,13 @@ public class AssetMetricsDto {
 
     // Added for composite score in sorting
     private Double compositeScore;
+
+    // Added full asset details
+    private String serialNumber;
+    private String manufacturer;
+    private String model;
+    private String location;
+    private String status;
+    private java.time.LocalDate purchaseDate;
+    private Integer warrantyMonths;
 }

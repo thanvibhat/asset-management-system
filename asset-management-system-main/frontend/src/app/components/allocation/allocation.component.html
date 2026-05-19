@@ -55,8 +55,21 @@
         <tr *ngFor="let a of assets" [class.clickable-row]="a.status === 'AVAILABLE'" (click)="a.status === 'AVAILABLE' ? openModal(a) : null">
           <td>
             <div class="asset-info">
-              <span class="asset-tag">{{ a.assetTag }}</span>
-              <div class="asset-name">{{ a.name }}</div>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span class="asset-tag">{{ a.assetTag }}</span>
+                <button type="button" class="btn-history-icon" (click)="openHistory(a); $event.stopPropagation();" title="View Event History"
+                        style="background:none;border:none;color:var(--primary);cursor:pointer;padding:2px;display:inline-flex;align-items:center;justify-content:center;transition:transform 0.15s ease;opacity:0.8;"
+                        onmouseover="this.style.transform='scale(1.15)';this.style.opacity='1';"
+                        onmouseout="this.style.transform='scale(1)';this.style.opacity='0.8';">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                    <polyline points="3 3 3 8 8 8"></polyline>
+                    <line x1="12" y1="7" x2="12" y2="12"></line>
+                    <polyline points="12 12 16 14"></polyline>
+                  </svg>
+                </button>
+              </div>
+              <div class="asset-name" style="margin-top:2px">{{ a.name }}</div>
             </div>
           </td>
           <td>{{ a.categoryName || '—' }}</td>
@@ -127,6 +140,83 @@
       <div class="modal-footer">
         <button class="btn btn-secondary" (click)="cancelReturn()">Cancel</button>
         <button class="btn btn-success" (click)="returnAsset()">Confirm Return</button>
+      </div>
+    </div>
+  </div>
+  <!-- History Modal -->
+  <div class="modal-overlay" *ngIf="showHistoryModal" (click)="closeHistoryModal()">
+    <div class="modal" style="max-width:850px;width:96%;"
+         (click)="$event.stopPropagation()">
+      <div class="modal-header" style="padding: 10px 16px;">
+        <h3>📋 History — {{ historyAsset?.assetTag }}: {{ historyAsset?.name }}</h3>
+        <button class="btn-close" (click)="closeHistoryModal()">✕</button>
+      </div>
+      <div class="modal-body" style="padding:0;max-height:560px;overflow-y:auto;">
+
+        <div *ngIf="loadingHistory"
+             style="padding:30px;text-align:center;font-size:13px;color:var(--text-3);">
+          Loading history...
+        </div>
+
+        <div *ngIf="!loadingHistory && assetHistory.length === 0"
+             style="padding:30px;text-align:center;font-size:13px;color:var(--text-3);">
+          No events recorded yet for this asset.
+        </div>
+
+        <div *ngFor="let ev of assetHistory"
+             style="display:flex;gap:10px;padding:8px 16px;
+                    border-bottom:1px solid var(--border);align-items: center;">
+          <div style="font-size:16px;width:24px;flex-shrink:0;
+                      text-align:center;display:flex;align-items:center;justify-content:center;
+                      height:24px;background:var(--bg-3);border-radius:50%;border:1px solid var(--border);">
+            {{ getEventIcon(ev.eventType) }}
+          </div>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+            <div style="display:flex;justify-content:space-between;
+                        align-items:center;gap:8px;flex-wrap:wrap;">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <span style="font-size:13px;font-weight:600;color:var(--text);">
+                  {{ ev.label }}
+                </span>
+                <span *ngIf="ev.performedBy"
+                     style="font-size:11px;color:var(--text-3);background:rgba(0,0,0,0.03);padding:1px 6px;border-radius:4px;">
+                  by {{ ev.performedBy }}
+                </span>
+              </div>
+              <span style="font-size:11px;color:var(--text-3);white-space:nowrap;">
+                {{ ev.eventDate | date:'dd MMM yyyy, h:mm a' }}
+              </span>
+            </div>
+            
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:1px;">
+              <div *ngIf="ev.notes"
+                   style="font-size:12px;color:var(--text-2);line-height:1.3;">
+                {{ ev.notes }}
+              </div>
+              
+              <div *ngIf="ev.fromStatus && ev.toStatus"
+                   style="font-size:11px;display:flex;align-items:center;gap:4px;background:var(--bg-3);padding:2px 6px;border-radius:4px;border:1px solid var(--border);">
+                <span [class]="badgeClass(ev.fromStatus)" style="font-size:10px;padding:1px 4px;">{{ formatStatus(ev.fromStatus) }}</span>
+                <span style="color:var(--text-3);font-size:10px;">→</span>
+                <span [class]="badgeClass(ev.toStatus)" style="font-size:10px;padding:1px 4px;">{{ formatStatus(ev.toStatus) }}</span>
+              </div>
+            </div>
+
+            <div *ngIf="parseMeta(ev.metadata).length > 0"
+                 style="display:flex;flex-wrap:wrap;gap:4px;margin-top:2px;">
+              <span *ngFor="let kv of parseMeta(ev.metadata)"
+                    style="font-size:10px;padding:1px 6px;
+                           background:var(--bg-3);border:1px solid var(--border);
+                           border-radius:4px;color:var(--text-2);font-weight:500;">
+                {{ kv.key }}: <strong style="color:var(--text-1);">{{ kv.value }}</strong>
+              </span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer" style="padding: 8px 16px;">
+        <button class="btn btn-secondary" (click)="closeHistoryModal()">Close</button>
       </div>
     </div>
   </div>

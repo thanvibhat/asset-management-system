@@ -83,7 +83,7 @@ export class AssetFormComponent implements OnInit, OnDestroy {
       status: ['AVAILABLE', Validators.required],
       purchaseDate: ['', Validators.required],
       purchaseCost: [null],
-      location: [''],
+      location: ['', Validators.required],
       serialNumber: [''],
       manufacturer: [''],
       model: [''],

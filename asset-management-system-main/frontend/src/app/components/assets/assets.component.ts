@@ -12,6 +12,8 @@ import { Asset, AssetCategory } from '../../models/models';
 import { Vendor } from '../../models/business.model';
 import { AssetFormComponent } from './asset-form/asset-form.component';
 import { ToastService } from '../../services/toast.service';
+import { ActivatedRoute, Router } from '@angular/router';
+import { ReportService } from '../../services/report.service';
 
 @Component({
   selector: 'app-assets',
@@ -23,6 +25,8 @@ import { ToastService } from '../../services/toast.service';
 export class AssetsComponent implements OnInit {
   assets: Asset[] = [];
   categories: AssetCategory[] = [];
+  isRankingView = false;
+  rankingTitle = '';
   loading = true;
   totalElements = 0;
   totalPages = 0;
@@ -121,13 +125,14 @@ export class AssetsComponent implements OnInit {
     private businessService: BusinessService,
     private masterService: MasterService,
     private toast: ToastService,
-    private http: HttpClient
+    private http: HttpClient,
+    private route: ActivatedRoute,
+    private router: Router,
+    private reportService: ReportService
   ) {}
 
   ngOnInit(): void {
-    this.loadCategories();
     this.loadVendors();
-    this.loadAssets();
     this.masterService.getProductsList().subscribe(p => this.products = p);
     this.masterService.getLocationsList().subscribe(l => this.locations = l.map((x: any) => x.name));
     this.masterService.getManufacturersList().subscribe(m => this.manufacturers = m.map((x: any) => x.name));
@@ -137,6 +142,57 @@ export class AssetsComponent implements OnInit {
       distinctUntilChanged()
     ).subscribe(() => {
       this.applyFilters();
+    });
+
+    // Load categories first, then check query parameters
+    this.assetService.getCategories().subscribe(c => {
+      this.categories = c;
+      
+      this.route.queryParams.subscribe(params => {
+        let hasFilter = false;
+        
+        if (params['ranking']) {
+          this.isRankingView = true;
+          this.loadRankedAssets(
+            params['ranking'],
+            params['fromDate'],
+            params['toDate'],
+            params['categoryId'] ? +params['categoryId'] : undefined
+          );
+          return;
+        }
+
+        this.isRankingView = false;
+        this.rankingTitle = '';
+
+        if (params['category']) {
+          const catName = params['category'].trim().toLowerCase();
+          const match = this.categories.find(cat => cat.name.trim().toLowerCase() === catName);
+          if (match) {
+            this.filters.categoryId = String(match.id);
+            hasFilter = true;
+          }
+        }
+        
+        if (params['status']) {
+          const statusVal = params['status'].trim().toUpperCase().replace(/ /g, '_');
+          if (this.statuses.includes(statusVal)) {
+            this.filters.status = statusVal;
+            hasFilter = true;
+          }
+        }
+
+        if (params['search']) {
+          this.filters.search = params['search'].trim();
+          hasFilter = true;
+        }
+        
+        if (hasFilter) {
+          this.applyFilters();
+        } else {
+          this.loadAssets();
+        }
+      });
     });
   }
 
@@ -176,6 +232,67 @@ export class AssetsComponent implements OnInit {
         this.assets = this.currentPage === 0 ? [] : this.assets;
       }
     });
+  }
+
+  loadRankedAssets(rankingType: string, fromDate?: string, toDate?: string, categoryId?: number): void {
+    this.loading = true;
+    let obs$;
+    if (rankingType === 'topPerformers') {
+      obs$ = this.reportService.getTopPerformers(fromDate, toDate, categoryId);
+      this.rankingTitle = 'Best Performing Assets';
+    } else if (rankingType === 'highCost') {
+      obs$ = this.reportService.getHighCostAssets(fromDate, toDate, categoryId);
+      this.rankingTitle = 'Highest Maintenance Cost Assets';
+    } else if (rankingType === 'frequent') {
+      obs$ = this.reportService.getFrequentRepairs(fromDate, toDate, categoryId);
+      this.rankingTitle = 'Frequent Repairs Assets';
+    } else if (rankingType === 'poorValue') {
+      obs$ = this.reportService.getPoorValueAssets(fromDate, toDate, categoryId);
+      this.rankingTitle = 'Poor Value Assets';
+    }
+
+    if (obs$) {
+      obs$.subscribe({
+        next: (metrics: any[]) => {
+          this.assetService.getAssets({ size: 200 }).subscribe({
+            next: (res) => {
+              const allAssets = res?.content || [];
+              const rankedTags = metrics.map(m => m.assetTag);
+              this.assets = allAssets
+                .filter(a => rankedTags.includes(a.assetTag))
+                .sort((a, b) => rankedTags.indexOf(a.assetTag) - rankedTags.indexOf(b.assetTag));
+              
+              this.totalElements = this.assets.length;
+              this.totalPages = 1;
+              this.loading = false;
+            },
+            error: () => {
+              this.loading = false;
+              this.assets = [];
+            }
+          });
+        },
+        error: () => {
+          this.loading = false;
+          this.assets = [];
+        }
+      });
+    } else {
+      this.loading = false;
+    }
+  }
+
+  clearRankingView(): void {
+    this.isRankingView = false;
+    this.rankingTitle = '';
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { ranking: null, fromDate: null, toDate: null, categoryId: null },
+      queryParamsHandling: 'merge'
+    });
+    this.currentPage = 0;
+    this.filters = { status: '', categoryId: '', search: '', vendorId: '' };
+    this.loadAssets();
   }
 
 

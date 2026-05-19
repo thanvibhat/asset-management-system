@@ -197,6 +197,71 @@ export class MaintenanceComponent implements OnInit {
     }
   }
 
+  showHistoryModal = false;
+  historyAsset: any = null;
+  assetHistory: any[] = [];
+  loadingHistory = false;
+
+  openHistory(assetOrId: any, assetTag?: string, assetName?: string): void {
+    let assetId: number;
+    if (typeof assetOrId === 'object' && assetOrId !== null) {
+      assetId = assetOrId.id || assetOrId.assetId;
+      this.historyAsset = {
+        id: assetId,
+        assetTag: assetOrId.assetTag,
+        name: assetOrId.name || assetOrId.assetName
+      };
+    } else {
+      assetId = Number(assetOrId);
+      this.historyAsset = {
+        id: assetId,
+        assetTag: assetTag || '',
+        name: assetName || ''
+      };
+    }
+    
+    this.assetHistory = [];
+    this.showHistoryModal = true;
+    this.loadingHistory = true;
+    
+    this.assetService.getAssetHistory(assetId).subscribe({
+      next: (data) => {
+        this.assetHistory = data;
+        this.loadingHistory = false;
+      },
+      error: () => {
+        this.loadingHistory = false;
+      }
+    });
+  }
+
+  closeHistoryModal(): void {
+    this.showHistoryModal = false;
+    this.historyAsset = null;
+    this.assetHistory = [];
+  }
+
+  getEventIcon(eventType: string): string {
+    const map: any = {
+      PURCHASED: '🛒', ALLOCATED: '👤', RETURNED: '↩️', REASSIGNED: '🔁',
+      MAINTENANCE_STARTED: '🔧', MAINTENANCE_COMPLETED: '✅',
+      STATUS_CHANGED: '🔄', COMPONENT_REPLACED: '🔩',
+      WARRANTY_UPDATED: '📋', RETIRED: '📦'
+    };
+    return map[eventType] || '•';
+  }
+
+  parseMeta(raw: any): { key: string; value: string }[] {
+    if (!raw) return [];
+    try {
+      const obj = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if (Object.keys(obj).length === 0) return [];
+      return Object.entries(obj)
+        .filter(([, v]) => v !== null && v !== undefined && v !== '')
+        .map(([k, v]) => ({ key: k, value: String(v) }));
+    } catch { return []; }
+  }
+
   goToPage(p: number): void { this.currentPage = p; this.load(); }
   pages(): number[] { return Array.from({ length: this.totalPages }, (_, i) => i); }
 

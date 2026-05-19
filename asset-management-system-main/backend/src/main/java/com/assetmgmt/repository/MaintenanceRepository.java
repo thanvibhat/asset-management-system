@@ -48,12 +48,24 @@ public interface MaintenanceRepository extends JpaRepository<MaintenanceRecord, 
     @Query("SELECT a.id, SUM(m.cost) FROM MaintenanceRecord m JOIN m.asset a WHERE m.status = 'COMPLETED' GROUP BY a.id")
     List<Object[]> getMaintenanceCostPerAsset();
 
+    @Query("SELECT a.id, SUM(m.cost) FROM MaintenanceRecord m JOIN m.asset a WHERE m.status = 'COMPLETED' AND m.completedDate >= :fromDate AND m.completedDate <= :toDate GROUP BY a.id")
+    List<Object[]> getMaintenanceCostPerAssetBetween(LocalDate fromDate, LocalDate toDate);
+
     @Query("SELECT a.id, COUNT(m) FROM MaintenanceRecord m JOIN m.asset a WHERE m.status = 'COMPLETED' AND m.maintenanceType = 'CORRECTIVE' GROUP BY a.id")
     List<Object[]> getCorrectiveCountPerAsset();
+
+    @Query("SELECT a.id, COUNT(m) FROM MaintenanceRecord m JOIN m.asset a WHERE m.status = 'COMPLETED' AND m.maintenanceType = 'CORRECTIVE' AND m.completedDate >= :fromDate AND m.completedDate <= :toDate GROUP BY a.id")
+    List<Object[]> getCorrectiveCountPerAssetBetween(LocalDate fromDate, LocalDate toDate);
 
     @Query("SELECT a.id, COUNT(m) FROM MaintenanceRecord m JOIN m.asset a WHERE m.status = 'COMPLETED' AND m.maintenanceType = 'PREVENTIVE' GROUP BY a.id")
     List<Object[]> getPreventiveCountPerAsset();
 
+    @Query("SELECT a.id, COUNT(m) FROM MaintenanceRecord m JOIN m.asset a WHERE m.status = 'COMPLETED' AND m.maintenanceType = 'PREVENTIVE' AND m.completedDate >= :fromDate AND m.completedDate <= :toDate GROUP BY a.id")
+    List<Object[]> getPreventiveCountPerAssetBetween(LocalDate fromDate, LocalDate toDate);
+
     @Query("SELECT a.id, m.completedDate FROM MaintenanceRecord m JOIN m.asset a WHERE m.status = 'COMPLETED' AND m.maintenanceType = 'CORRECTIVE' AND m.completedDate IS NOT NULL ORDER BY a.id, m.completedDate")
     List<Object[]> getCorrectiveDatesPerAsset();
+
+    @Query("SELECT a.id, m.completedDate FROM MaintenanceRecord m JOIN m.asset a WHERE m.status = 'COMPLETED' AND m.maintenanceType = 'CORRECTIVE' AND m.completedDate IS NOT NULL AND m.completedDate >= :fromDate AND m.completedDate <= :toDate ORDER BY a.id, m.completedDate")
+    List<Object[]> getCorrectiveDatesPerAssetBetween(LocalDate fromDate, LocalDate toDate);
 }

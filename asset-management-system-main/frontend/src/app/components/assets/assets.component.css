@@ -136,3 +136,65 @@ textarea.form-control { resize: vertical; min-height: 70px; }
   background: var(--bg-2) !important;
   box-shadow: inset 4px 0 0 var(--primary);
 }
+
+/* Premium Ranking View Indicator Styling */
+.ranking-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px !important;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(99, 102, 241, 0.08)) !important;
+  border: 1px solid rgba(37, 99, 235, 0.2) !important;
+  border-left: 4px solid var(--primary) !important;
+  border-radius: 8px !important;
+  margin-bottom: 20px;
+  backdrop-filter: blur(8px);
+}
+
+.ranking-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.ranking-icon {
+  color: var(--primary);
+  filter: drop-shadow(0 0 8px rgba(37, 99, 235, 0.4));
+}
+
+.ranking-text-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ranking-tag {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--primary);
+}
+
+.ranking-title-text {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.btn-clear-ranking {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  border-radius: 6px !important;
+  transition: all var(--transition) !important;
+}
+
+.btn-clear-ranking:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}

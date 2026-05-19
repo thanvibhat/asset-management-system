@@ -1,0 +1,231 @@
+<div class="page">
+  <div class="page-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap: 20px; flex-wrap: wrap;">
+    <div class="page-title-group">
+      <h1 class="page-title">Asset Transfers</h1>
+      <span class="page-subtitle">{{ filteredAssets.length }} unallocated assets available for transfer</span>
+    </div>
+    <div style="display:flex; gap:8px; align-items:center; flex: 1; max-width: 480px; min-width: 250px;">
+      <input class="form-control" type="text" [(ngModel)]="searchQuery" (input)="applyFilter()"
+             placeholder="Search unallocated assets..." style="height:34px; font-size:12.5px; flex:1; margin:0;">
+      <button class="btn btn-secondary" style="height:34px; font-size:12.5px; padding: 0 12px; display:flex; align-items:center; margin:0;" (click)="searchQuery = ''; applyFilter();">Reset</button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-state" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Retrieving unallocated asset list...</p>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="!loading && filteredAssets.length === 0">
+    <div class="empty-icon">🚚</div>
+    <h3>No Unallocated Assets Found</h3>
+    <p>All assets are currently allocated or no matching unallocated assets found.</p>
+  </div>
+
+  <!-- Assets Grid Table -->
+  <div class="table-wrap" *ngIf="!loading && filteredAssets.length > 0">
+    <table class="table">
+      <thead>
+        <tr>
+          <th style="width: 140px;">Asset Tag</th>
+          <th>Asset Name</th>
+          <th>Category</th>
+          <th>Status</th>
+          <th>Current Location</th>
+          <th>Serial Number</th>
+          <th style="width: 150px; text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let a of filteredAssets">
+          <td>
+            <div class="asset-info">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span class="asset-tag">{{ a.assetTag }}</span>
+                <button type="button" class="btn-history-icon" (click)="openHistory(a); $event.stopPropagation();" title="View Event History"
+                        style="background:none;border:none;color:var(--primary);cursor:pointer;padding:2px;display:inline-flex;align-items:center;justify-content:center;transition:transform 0.15s ease;opacity:0.8;"
+                        onmouseover="this.style.transform='scale(1.15)';this.style.opacity='1';"
+                        onmouseout="this.style.transform='scale(1)';this.style.opacity='0.8';">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                    <polyline points="3 3 3 8 8 8"></polyline>
+                    <line x1="12" y1="7" x2="12" y2="12"></line>
+                    <polyline points="12 12 16 14"></polyline>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="asset-name">{{ a.name }}</div>
+            <div class="asset-model" *ngIf="a.manufacturer" style="font-size:11px;color:var(--text-3);margin-top:2px;">{{ a.manufacturer }} {{ a.model }}</div>
+          </td>
+          <td>{{ a.categoryName || '—' }}</td>
+          <td>
+            <span [class]="badgeClass(a.status)">{{ formatStatus(a.status) }}</span>
+          </td>
+          <td>
+            <span class="location-badge" style="background:var(--bg-3);padding:3px 8px;border-radius:4px;font-size:12px;color:var(--text-2);border:1px solid var(--border);">
+              📍 {{ a.location || 'Unassigned' }}
+            </span>
+          </td>
+          <td style="font-family:monospace;font-size:12px;color:var(--text-2);">{{ a.serialNumber || '—' }}</td>
+          <td style="text-align: right;">
+            <button class="btn btn-primary btn-sm" (click)="openTransferModal(a)" style="padding:4px 10px;font-size:12px;">
+              🚚 Transfer
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- TRANSFER MODAL -->
+<div class="modal-backdrop" *ngIf="showTransferModal" (click)="closeTransferModal()">
+  <div class="modal-card" style="max-width: 480px;" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:20px;">🚚</span>
+        <div>
+          <h2 class="modal-title">Transfer Location</h2>
+          <p class="modal-subtitle" style="font-size:11px;color:var(--text-3);margin-top:2px;">Reassign physical asset warehouse or office</p>
+        </div>
+      </div>
+      <button class="modal-close" (click)="closeTransferModal()">✕</button>
+    </div>
+    
+    <div class="modal-body" style="padding-top:10px;">
+      <!-- Selected Asset Overview -->
+      <div class="selected-asset-box" style="background:var(--bg-2);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:16px;">
+        <div style="display:flex;justify-content:between;align-items:start;margin-bottom:8px;">
+          <span class="asset-tag" style="margin-bottom:0;">{{ selectedAsset?.assetTag }}</span>
+          <span [class]="badgeClass(selectedAsset?.status || '')" style="font-size:10px;padding:1px 5px;">
+            {{ formatStatus(selectedAsset?.status || '') }}
+          </span>
+        </div>
+        <div class="asset-name" style="font-weight:600;font-size:13px;">{{ selectedAsset?.name }}</div>
+        <div style="font-size:12px;color:var(--text-3);margin-top:6px;">
+          Current Location: <span style="font-weight:500;color:var(--text-2);">📍 {{ selectedAsset?.location || 'Unassigned' }}</span>
+        </div>
+        
+        <!-- Info alert about unallocated child assets -->
+        <div class="child-transfer-info" style="margin-top:10px;padding:8px 10px;background:rgba(108,99,255,0.06);border-left:3px solid var(--primary);border-radius:0 4px 4px 0;font-size:11px;color:var(--text-2);line-height:1.4;">
+          💡 Any unallocated child devices linked to this asset (e.g. keyboards, mice) will be transferred automatically.
+        </div>
+      </div>
+
+      <!-- Form Inputs -->
+      <div class="form-group autocomplete-wrap" style="position:relative;margin-bottom:20px;">
+        <label class="form-label" style="font-weight:500;font-size:12px;color:var(--text-2);">New Destination Location *</label>
+        <input class="form-control" type="text" 
+               [value]="newLocation" 
+               (input)="filterLocations($event)"
+               (blur)="showLocationDropdown = false"
+               placeholder="Enter new office or select suggestion..." 
+               style="width:100%;"
+               #locInput>
+        
+        <div class="autocomplete-dropdown" *ngIf="showLocationDropdown && locationSuggestions.length > 0" 
+             style="position:absolute;top:100%;left:0;right:0;z-index:999;background:var(--dropdown-bg);border:1px solid var(--border);box-shadow:var(--shadow-md);border-radius:4px;max-height:150px;overflow-y:auto;margin-top:4px;">
+          <div class="autocomplete-item" *ngFor="let loc of locationSuggestions"
+               (mousedown)="selectLocation(loc)"
+               style="padding:8px 12px;cursor:pointer;font-size:12px;color:var(--text-2);border-bottom:1px solid var(--border);">
+            📍 {{ loc }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer" style="display:flex;justify-content:end;gap:10px;border-top:1px solid var(--border);padding-top:14px;margin-top:10px;">
+      <button class="btn btn-secondary" (click)="closeTransferModal()" [disabled]="saving">Cancel</button>
+      <button class="btn btn-primary" (click)="executeTransfer()" [disabled]="saving || !newLocation.trim()">
+        {{ saving ? 'Transferring...' : 'Confirm Transfer' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- HISTORY / AUDIT TIMELINE MODAL (Ubiquitous Timeline Pop-up) -->
+<div class="modal-backdrop" *ngIf="showHistoryModal" (click)="closeHistoryModal()">
+  <div class="modal-card modal-wide" (click)="$event.stopPropagation()" style="max-width: 850px; width: 90%;">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+            <polyline points="3 3 3 8 8 8"></polyline>
+            <line x1="12" y1="7" x2="12" y2="12"></line>
+            <polyline points="12 12 16 14"></polyline>
+          </svg>
+          Audit History & Timeline
+        </h2>
+        <p class="modal-subtitle" style="margin-top: 3px;">Full audit log of lifecycle events, updates, transfers, and maintenance logs</p>
+      </div>
+      <button class="modal-close" (click)="closeHistoryModal()">✕</button>
+    </div>
+    
+    <div class="modal-body" style="padding-top: 15px;">
+      <!-- Active Header Context Box -->
+      <div style="display: flex; align-items: start; justify-content: space-between; background: var(--bg-2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin-bottom: 20px;">
+        <div>
+          <span class="asset-tag">{{ historyAsset?.assetTag }}</span>
+          <span style="font-size: 15px; font-weight: 600; color: var(--text); margin-left: 8px;">{{ historyAsset?.name }}</span>
+          <div style="font-size: 12px; color: var(--text-3); margin-top: 4px;">
+            Category: <strong style="color: var(--text-2);">{{ historyAsset?.categoryName || '—' }}</strong> | 
+            Serial: <strong style="color: var(--text-2);">{{ historyAsset?.serialNumber || '—' }}</strong>
+          </div>
+        </div>
+        <div style="text-align: right;">
+          <span [class]="badgeClass(historyAsset?.status)" style="font-size: 11px; padding: 3px 8px;">{{ formatStatus(historyAsset?.status) }}</span>
+          <div style="font-size: 12px; color: var(--text-3); margin-top: 5px;">📍 {{ historyAsset?.location || 'Unassigned' }}</div>
+        </div>
+      </div>
+
+      <!-- Loading / Empty Audit States -->
+      <div class="loading-state" *ngIf="loadingHistory" style="padding: 40px 0;">
+        <div class="spinner"></div>
+        <p>Loading chronological event logs...</p>
+      </div>
+      
+      <div *ngIf="!loadingHistory && assetHistory.length === 0" style="text-align: center; padding: 40px 20px; color: var(--text-3);">
+        <p style="font-size: 24px; margin-bottom: 8px;">📋</p>
+        <p style="font-size: 13px;">No history records logged for this asset yet.</p>
+      </div>
+
+      <!-- Chronological Timeline Log -->
+      <div class="timeline-container" *ngIf="!loadingHistory && assetHistory.length > 0">
+        <div class="timeline-trail"></div>
+        
+        <div class="timeline-item" *ngFor="let ev of assetHistory">
+          <!-- Timeline point node -->
+          <div class="timeline-node">
+            <span class="timeline-node-icon">{{ getEventIcon(ev.eventType) }}</span>
+          </div>
+          
+          <div class="timeline-content">
+            <div class="timeline-header">
+              <span class="timeline-title">{{ formatStatus(ev.eventType) }}</span>
+              <span class="timeline-time">{{ ev.eventDate | date:'medium' }}</span>
+            </div>
+            
+            <p class="timeline-description">{{ ev.notes }}</p>
+            
+            <div class="timeline-meta" *ngIf="ev.metadata && parseMeta(ev.metadata)">
+              <span class="meta-label">Details:</span> {{ parseMeta(ev.metadata) }}
+            </div>
+            
+            <div class="timeline-footer-info" style="display: flex; align-items: center; justify-content: space-between; margin-top: 6px; font-size: 11px; color: var(--text-3);">
+              <span>User: <strong style="color: var(--text-2);">{{ ev.performedBy || 'system' }}</strong></span>
+              <span style="font-size: 10px; opacity: 0.8;" *ngIf="ev.fromStatus">
+                Status: {{ formatStatus(ev.fromStatus) }} → {{ formatStatus(ev.toStatus) }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

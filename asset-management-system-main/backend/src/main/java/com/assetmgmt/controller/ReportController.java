@@ -10,12 +10,14 @@ import com.assetmgmt.service.AnalyticsService;
 import com.assetmgmt.service.DashboardService;
 import com.assetmgmt.service.ReportService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -30,23 +32,38 @@ public class ReportController {
     private final AssetRepository assetRepository;
 
     @GetMapping("/top-performers")
-    public ResponseEntity<List<AssetMetricsDto>> getTopPerformers(@RequestParam(defaultValue = "5") int n) {
-        return ResponseEntity.ok(assetAnalyticsService.getTopPerformers(n));
+    public ResponseEntity<List<AssetMetricsDto>> getTopPerformers(
+            @RequestParam(defaultValue = "5") int n,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+            @RequestParam(required = false) Long categoryId) {
+        return ResponseEntity.ok(assetAnalyticsService.getTopPerformers(n, fromDate, toDate, categoryId));
     }
 
     @GetMapping("/high-cost-assets")
-    public ResponseEntity<List<AssetMetricsDto>> getHighCostAssets(@RequestParam(defaultValue = "10") int n) {
-        return ResponseEntity.ok(assetAnalyticsService.getHighCostAssets(n));
+    public ResponseEntity<List<AssetMetricsDto>> getHighCostAssets(
+            @RequestParam(defaultValue = "10") int n,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+            @RequestParam(required = false) Long categoryId) {
+        return ResponseEntity.ok(assetAnalyticsService.getHighCostAssets(n, fromDate, toDate, categoryId));
     }
 
     @GetMapping("/frequent-repairs")
-    public ResponseEntity<List<AssetMetricsDto>> getFrequentRepairs(@RequestParam(defaultValue = "10") int n) {
-        return ResponseEntity.ok(assetAnalyticsService.getFrequentRepairAssets(n));
+    public ResponseEntity<List<AssetMetricsDto>> getFrequentRepairs(
+            @RequestParam(defaultValue = "10") int n,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+            @RequestParam(required = false) Long categoryId) {
+        return ResponseEntity.ok(assetAnalyticsService.getFrequentRepairAssets(n, fromDate, toDate, categoryId));
     }
 
     @GetMapping("/poor-value-assets")
-    public ResponseEntity<List<AssetMetricsDto>> getPoorValueAssets() {
-        return ResponseEntity.ok(assetAnalyticsService.getPoorValueAssets());
+    public ResponseEntity<List<AssetMetricsDto>> getPoorValueAssets(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+            @RequestParam(required = false) Long categoryId) {
+        return ResponseEntity.ok(assetAnalyticsService.getPoorValueAssets(fromDate, toDate, categoryId));
     }
 
     @GetMapping("/analytics/maintenance")
@@ -75,7 +92,7 @@ public class ReportController {
     @GetMapping("/export/assets")
     public ResponseEntity<byte[]> exportAssets() {
         List<Asset> assets = assetRepository.findAll();
-        StringBuilder csv = new StringBuilder("ID,Asset Tag,Name,Category,Status,Purchase Date,Cost,Value\n");
+        StringBuilder csv = new StringBuilder("ID,Asset Tag,Name,Category,Status,Purchase Date,Cost,Value,Serial Number,Manufacturer,Model,Location,Warranty (Months)\n");
         for (Asset a : assets) {
             csv.append(a.getId()).append(",")
                .append(a.getAssetTag()).append(",")
@@ -84,7 +101,12 @@ public class ReportController {
                .append(a.getStatus()).append(",")
                .append(a.getPurchaseDate()).append(",")
                .append(a.getPurchaseCost()).append(",")
-               .append(a.getCurrentValue()).append("\n");
+               .append(a.getCurrentValue()).append(",")
+               .append("\"").append(a.getSerialNumber() != null ? a.getSerialNumber() : "").append("\",")
+               .append("\"").append(a.getManufacturer() != null ? a.getManufacturer() : "").append("\",")
+               .append("\"").append(a.getModel() != null ? a.getModel() : "").append("\",")
+               .append("\"").append(a.getLocation() != null ? a.getLocation() : "").append("\",")
+               .append(a.getWarrantyMonths() != null ? a.getWarrantyMonths() : 0).append("\n");
         }
         
         byte[] data = csv.toString().getBytes();

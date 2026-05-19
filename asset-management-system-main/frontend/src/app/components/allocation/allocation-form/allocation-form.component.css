@@ -1,5 +1,6 @@
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 0;
+  margin-top: 16px;
   position: relative;
 }
 
@@ -8,7 +9,7 @@
   font-size: 13px;
   font-weight: 600;
   color: var(--text-1);
-  margin-bottom: 8px;
+  margin-bottom: 3px;
 }
 
 .form-control {

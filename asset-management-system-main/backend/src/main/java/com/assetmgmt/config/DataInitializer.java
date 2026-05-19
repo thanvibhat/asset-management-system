@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import com.assetmgmt.service.NotificationScheduler;
 
 @Component
 public class DataInitializer implements CommandLineRunner {
@@ -31,7 +32,8 @@ public class DataInitializer implements CommandLineRunner {
     private final ProcurementRepository procurementRepository;
     private final MaintenanceRepository maintenanceRepository;
     private final AuditLogRepository auditLogRepository;
-
+    private final NotificationScheduler notificationScheduler;
+ 
     public DataInitializer(UserRepository userRepository, 
                            RoleRepository roleRepository, 
                            PermissionRepository permissionRepository,
@@ -44,7 +46,8 @@ public class DataInitializer implements CommandLineRunner {
                            VendorRepository vendorRepository,
                            ProcurementRepository procurementRepository,
                            MaintenanceRepository maintenanceRepository,
-                           AuditLogRepository auditLogRepository) {
+                           AuditLogRepository auditLogRepository,
+                           NotificationScheduler notificationScheduler) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.permissionRepository = permissionRepository;
@@ -58,6 +61,7 @@ public class DataInitializer implements CommandLineRunner {
         this.procurementRepository = procurementRepository;
         this.maintenanceRepository = maintenanceRepository;
         this.auditLogRepository = auditLogRepository;
+        this.notificationScheduler = notificationScheduler;
     }
 
     @Override
@@ -124,6 +128,9 @@ public class DataInitializer implements CommandLineRunner {
 
         // Sync asset statuses with active maintenance
         syncAssetStatuses();
+
+        // Run warranty expiry check for 3 days prior on startup to generate notifications for seeded data
+        notificationScheduler.checkWarrantyExpiry3DaysPrior();
 
         log.info("Data initialization completed successfully.");
     }
@@ -371,6 +378,28 @@ public class DataInitializer implements CommandLineRunner {
                 .asset(a2).vendor(localService).maintenanceType(MaintenanceRecord.MaintenanceType.CORRECTIVE)
                 .description("Screen Replacement").cost(new java.math.BigDecimal("15000")).status(MaintenanceRecord.MaintenanceStatus.COMPLETED)
                 .scheduledDate(now.minusMonths(1)).completedDate(now.minusMonths(1)).build());
+
+        // Seed parent asset with warranty expiring in 3 days
+        Asset parentAsset = assetRepository.save(Asset.builder()
+                .assetTag("LAP-6").name("Dell Latitude 5420 (Expiring)")
+                .category(laptopCat).status(Asset.AssetStatus.AVAILABLE)
+                .purchaseDate(now.minusMonths(12).plusDays(3))
+                .warrantyMonths(12)
+                .purchaseCost(new java.math.BigDecimal("55000"))
+                .currentValue(new java.math.BigDecimal("42000"))
+                .build());
+
+        // Seed child asset with warranty expiring in 3 days
+        AssetCategory peripheralCat = categoryRepository.findByName("Peripherals").orElse(laptopCat);
+        Asset childAsset = assetRepository.save(Asset.builder()
+                .assetTag("MOU-1").name("Wireless Mouse (Expiring)")
+                .category(peripheralCat).status(Asset.AssetStatus.AVAILABLE)
+                .purchaseDate(now.minusMonths(6).plusDays(3))
+                .warrantyMonths(6)
+                .parentAsset(parentAsset)
+                .purchaseCost(new java.math.BigDecimal("1500"))
+                .currentValue(new java.math.BigDecimal("1000"))
+                .build());
 
         log.info("Analytics data seeded.");
         

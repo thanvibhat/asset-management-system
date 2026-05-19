@@ -64,6 +64,40 @@ public class NotificationScheduler {
         }
     }
 
+    @Scheduled(cron = "0 15 8 * * *")
+    @Transactional
+    public void checkWarrantyExpiry3DaysPrior() {
+        LocalDate targetDate = LocalDate.now().plusDays(3);
+        List<Asset> assets = assetRepository.findByWarrantyExpiryBetween(targetDate, targetDate);
+
+        List<User> admins = userRepository.findByEnabled(true).stream()
+                .filter(u -> u.getRoles().stream().anyMatch(r -> "ROLE_ADMIN".equals(r.getName()) || "ROLE_MANAGER".equals(r.getName())))
+                .collect(Collectors.toList());
+
+        for (Asset asset : assets) {
+            String message;
+            if (asset.getParentAsset() != null) {
+                message = "Warranty expiring in 3 days: Child asset " + asset.getName() + 
+                          " (Tag: " + asset.getAssetTag() + ", Parent: " + asset.getParentAsset().getName() + 
+                          " [" + asset.getParentAsset().getAssetTag() + "]) expires on " + asset.getWarrantyExpiryDate();
+            } else {
+                message = "Warranty expiring in 3 days: " + asset.getName() + 
+                          " (Tag: " + asset.getAssetTag() + ") expires on " + asset.getWarrantyExpiryDate();
+            }
+            
+            // Notify assigned user(s)
+            List<Allocation> activeAllocations = allocationRepository.findByStatus(Allocation.AllocationStatus.ACTIVE);
+            activeAllocations.stream()
+                    .filter(a -> a.getAsset().getId().equals(asset.getId()))
+                    .forEach(a -> notificationService.sendNotification(a.getUser(), message, "WARRANTY"));
+
+            // Notify admins and managers
+            for (User admin : admins) {
+                notificationService.sendNotification(admin, message, "WARRANTY");
+            }
+        }
+    }
+
     @Scheduled(cron = "0 0 9 * * *")
     @Transactional
     public void checkOverdueAllocations() {
